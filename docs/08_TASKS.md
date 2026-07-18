@@ -3,8 +3,8 @@
 Claude Codeへの指示: **1マイルストーンずつ実装し、完了条件を満たしてから次へ進む。** Task単位でcommit（例: `M2-03: ...`）。完了したタスクは `[x]` に更新する。
 
 ## M0: Project Setup
-- [ ] M0-01 pnpm workspace monorepo初期化（apps/web, workers/api, workers/batch, packages/shared, packages/kps）
-- [ ] M0-02 TypeScript / ESLint / Prettier 共通設定、Vitest導入
+- [x] M0-01 pnpm workspace monorepo初期化（apps/web, workers/api, workers/batch, packages/shared, packages/kps）
+- [x] M0-02 TypeScript / ESLint / Prettier 共通設定、Vitest導入
 - [ ] M0-03 CI（.github/workflows/ci.yml: lint + typecheck + test）
 - [ ] M0-04 README.md（アーキテクチャ概要・セットアップ手順）、.env.example
 - [ ] M0-05 Supabaseプロジェクト接続設定 + migrationsディレクトリ + 05_DATABASEのDDL適用
