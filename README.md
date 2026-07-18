@@ -1,2 +1,83 @@
-# personal-knowledge-os
-知識の構造化エンジン。AI用の構造化知識を育成する。
+# Personal Knowledge OS
+
+知識の構造化エンジン。所有する専門書・PDF・写真をVLMで解析し、構造化された知識（Markdown / Concepts / Knowledge Graph / Embedding）へ変換して、長期的に育つ個人専用Knowledge Baseを構築するWebサービス。
+
+## アーキテクチャ概要
+
+```
+[Browser SPA (React)]
+   │ Supabase Auth (JWT)
+   ▼
+[Cloudflare Pages] ──→ [Cloudflare Workers API (Hono)]
+                              │            │
+                     [Supabase PG]      [R2 Storage]
+                              │
+                    repository_dispatch
+                              ▼
+                    [GitHub Actions: batch runner (TS)]
+                       │        │         │
+                  [Claude API] [Workers AI BGE-M3] [Supabase/R2 書き込み]
+```
+
+- **Frontend**: React + TypeScript + Vite → Cloudflare Pages
+- **API**: Cloudflare Workers + Hono
+- **DB/Auth**: Supabase（PostgreSQL + pgvector + Auth + RLS）
+- **Storage**: Cloudflare R2
+- **Batch**: GitHub Actions（`repository_dispatch` で起動するTSランナー）
+- **VLM**: Claude API / **Embedding**: Workers AI `@cf/baai/bge-m3`
+
+詳細は `docs/`（01_PRD 〜 09_DEVELOPMENT_RULES）を参照。
+
+## リポジトリ構成
+
+```
+apps/web            React SPA（M1で実装）
+workers/api         Cloudflare Workers API（M1で実装）
+workers/batch       GitHub Actionsバッチランナー（M2で実装）
+packages/shared     共有型・ユーティリティ（R2キー命名等）
+packages/kps        Knowledge Pipeline System（M2以降で実装）
+supabase/migrations DBマイグレーション（SQL）
+```
+
+## セットアップ
+
+前提: Node.js 20以上、pnpm 11（`npm i -g pnpm`）
+
+```sh
+pnpm install
+
+# 環境変数の準備（値は各サービスのダッシュボードから取得）
+cp .env.example .env
+```
+
+### 開発コマンド
+
+```sh
+pnpm lint          # ESLint（リポジトリ全体）
+pnpm format:check  # Prettier チェック（pnpm format で自動整形）
+pnpm typecheck     # 全workspaceの型チェック
+pnpm test          # 全workspaceのテスト（Vitest）
+```
+
+### Supabase
+
+1. [Supabase](https://supabase.com) でプロジェクトを作成
+2. Supabase CLI をインストールし、プロジェクトをリンク:
+   ```sh
+   supabase link --project-ref <project-ref>
+   ```
+3. マイグレーションを適用:
+   ```sh
+   supabase db push
+   ```
+
+## 進捗
+
+- [ ] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ（M0-05のみ残り）
+- [ ] M1: Auth + Upload
+- [ ] M2: Processing Pipeline（写真→Markdown）
+- [ ] M3: Knowledge化 + 検索
+- [ ] M4: 引用付きチャット
+- [ ] M5: Hardening
+
+タスク詳細は `docs/08_TASKS.md`。
