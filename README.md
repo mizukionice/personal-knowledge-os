@@ -73,12 +73,11 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
 ### Supabase
 
 1. [Supabase](https://supabase.com) でプロジェクトを作成
-2. [Supabase CLI](https://supabase.com/docs/guides/cli) をインストール（例: `scoop install supabase` / `brew install supabase/tap/supabase`）
-3. プロジェクトをリンクし、マイグレーション（`supabase/migrations/`）を適用:
+2. マイグレーション（`supabase/migrations/`）を適用。DBパスワード（`.env` の `SUPABASE_DB_PASSWORD`）があればlink不要:
    ```sh
-   supabase link --project-ref <project-ref>
-   supabase db push
+   pnpm dlx supabase db push --db-url "postgresql://postgres:<db-password>@db.<project-ref>.supabase.co:5432/postgres"
    ```
+   （または `supabase link --project-ref <project-ref> && supabase db push`）
 4. `.env` の `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` 等をダッシュボードの値で埋める
 
 スキーマ定義は `docs/05_DATABASE.md`、実体は `supabase/migrations/` のSQL。変更は必ず新しいmigrationファイルで行う。
