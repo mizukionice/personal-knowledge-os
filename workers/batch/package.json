@@ -4,14 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@pkos/kps": "workspace:*",
-    "@pkos/shared": "workspace:*"
+    "@pkos/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.110.7",
+    "aws4fetch": "^1.0.20"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"
   }

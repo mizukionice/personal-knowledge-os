@@ -40,3 +40,8 @@ export function r2UploadImageKey(
 export function r2UploadPdfKey(userId: string, documentId: string): string {
   return `${r2Prefix(userId, documentId)}uploads/original.pdf`;
 }
+
+/** 全ページ結合Markdown（KPS §7） */
+export function r2FullMarkdownKey(userId: string, documentId: string): string {
+  return `${r2Prefix(userId, documentId)}markdown/full.md`;
+}
