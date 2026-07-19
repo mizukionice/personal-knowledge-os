@@ -18,6 +18,8 @@ GITHUB_REPO = "mizukionice/personal-knowledge-os"
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "personal-knowledge-os"
+# ローカル開発でR2バインディングを実バケットに接続する（wrangler devのみ有効）
+remote = true
 
 [observability]
 enabled = true
