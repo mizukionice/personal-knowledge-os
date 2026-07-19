@@ -37,6 +37,16 @@ function fakeDb(options: { job?: JobRow | null; document: DocumentRow; pages: Pa
   };
 
   const db: Db = {
+    // M3メソッドはrunner単体テストでは未使用（knowledge deps未指定でスキップされる）
+    deleteDocumentKnowledge: vi.fn(),
+    insertChunks: vi.fn(),
+    findConceptByName: vi.fn(),
+    findSimilarConcepts: vi.fn(),
+    upsertConcept: vi.fn(),
+    getConceptImportance: vi.fn(),
+    updateConcept: vi.fn(),
+    insertMentions: vi.fn(),
+    insertLinks: vi.fn(),
     claimJob: vi.fn(async (jobId: string) => {
       if (!state.job || state.job.id !== jobId || state.job.status !== 'queued') return null;
       state.job = { ...state.job, status: 'processing' };

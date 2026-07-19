@@ -7,15 +7,18 @@ import {
   r2UploadPdfKey,
   type PageAnalysis,
 } from '@pkos/shared';
-import type { DocumentParser, ImageMediaType, PageAnalyzer } from '@pkos/kps';
+import type { AnalyzedPage, DocumentParser, ImageMediaType, PageAnalyzer } from '@pkos/kps';
 
-import type { Db, ObjectStore, PageRow } from './types';
+import { runKnowledgeStage, type KnowledgeDeps } from './knowledge-stage';
+import type { Db, ObjectStore } from './types';
 
 export interface RunnerDeps {
   db: Db;
   store: ObjectStore;
   parser: DocumentParser;
   analyzer: PageAnalyzer;
+  /** M3 Knowledge化ステージ（未指定ならスキップ = M2までの動作） */
+  knowledge?: Omit<KnowledgeDeps, 'db'>;
   log?: (message: string) => void;
 }
 
@@ -27,7 +30,7 @@ function mediaTypeFromKey(key: string): ImageMediaType {
 
 /**
  * ジョブランナー（TDD §4）: job claim → (PDFならページ分解) → ページ順次処理 →
- * R2/DB保存 → 進捗更新 → job/document完了更新。
+ * R2/DB保存 → 進捗更新 → (全ページ成功ならKnowledge化) → job/document完了更新。
  *
  * ページ処理は逐次実行する。KPS §3のcontext_summary連鎖（前ページの要約を
  * 次ページの入力に渡す）が逐次依存を作るため、KPS優先の判断でTDD §5の
@@ -74,35 +77,35 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
       throw new Error('no pages to process (upload may not be completed)');
     }
 
-    const total = pages.length;
-    let completed = pages.filter((page) => page.status === 'completed').length;
-    let failed = 0;
-    /** 直前ページのcontext_summary（KPS §3）。再実行時は完了済み分析から遅延取得する */
-    let previousSummary: string | undefined;
-    let previousCompletedPage: PageRow | null = null;
-    const markdownByPage = new Map<number, string>();
-
-    const loadSummaryFromCompleted = async (page: PageRow): Promise<string | undefined> => {
-      if (!page.r2_analysis_key) return undefined;
+    const loadAnalysis = async (key: string): Promise<PageAnalysis | undefined> => {
       try {
-        const raw = new TextDecoder().decode(await store.get(page.r2_analysis_key));
+        const raw = new TextDecoder().decode(await store.get(key));
         const parsed = pageAnalysisSchema.safeParse(JSON.parse(raw));
-        return parsed.success ? parsed.data.context_summary : undefined;
+        return parsed.success ? parsed.data : undefined;
       } catch {
         return undefined;
       }
     };
 
+    const total = pages.length;
+    let completed = pages.filter((page) => page.status === 'completed').length;
+    let failed = 0;
+    /** ページ番号→PageAnalysis（今回処理した分。過去分は後でR2から復元） */
+    const analyses = new Map<number, PageAnalysis>();
+    /** 直前ページのcontext_summary（KPS §3）。再実行時は完了済み分析から遅延取得する */
+    let previousSummary: string | undefined;
+    let previousCompletedKey: string | null = null;
+
     for (const page of pages) {
       if (page.status === 'completed') {
-        previousCompletedPage = page;
+        previousCompletedKey = page.r2_analysis_key;
         previousSummary = undefined; // 必要になったら遅延取得
         continue;
       }
 
       // 再実行で途中から始まる場合、直前の完了ページの要約をR2から復元する
-      if (previousSummary === undefined && previousCompletedPage) {
-        previousSummary = await loadSummaryFromCompleted(previousCompletedPage);
+      if (previousSummary === undefined && previousCompletedKey) {
+        previousSummary = (await loadAnalysis(previousCompletedKey))?.context_summary || undefined;
       }
 
       log(`processing page ${page.page_number}/${total}`);
@@ -127,9 +130,9 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
           error: null,
         });
 
-        markdownByPage.set(page.page_number, analysis.markdown);
+        analyses.set(page.page_number, analysis);
         previousSummary = analysis.context_summary || undefined;
-        previousCompletedPage = null;
+        previousCompletedKey = null;
         completed += 1;
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
@@ -137,29 +140,31 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
         await db.updatePage(page.id, { status: 'failed', error: message });
         failed += 1;
         previousSummary = undefined;
-        previousCompletedPage = null;
+        previousCompletedKey = null;
       }
       await db.updateJob(job.id, { progress: Math.round(((completed + failed) / total) * 100) });
     }
 
-    // 結合Markdown（full.md）。過去に完了済みのページはR2から取得して結合する
-    const completedPages = pages.filter(
-      (page) => page.status === 'completed' || markdownByPage.has(page.page_number),
-    );
-    if (completedPages.length > 0) {
-      const parts: string[] = [];
-      for (const page of pages) {
-        let markdown = markdownByPage.get(page.page_number);
-        if (markdown === undefined && page.status === 'completed' && page.r2_markdown_key) {
-          markdown = new TextDecoder().decode(await store.get(page.r2_markdown_key));
-        }
-        if (markdown !== undefined && markdown.trim() !== '') {
-          parts.push(markdown.trim());
-        }
+    // 過去の実行で完了済みのページのPageAnalysisをR2から復元する
+    for (const page of pages) {
+      if (analyses.has(page.page_number)) continue;
+      if (page.status === 'completed' && page.r2_analysis_key) {
+        const loaded = await loadAnalysis(page.r2_analysis_key);
+        if (loaded) analyses.set(page.page_number, loaded);
       }
+    }
+    const analyzedPages: AnalyzedPage[] = [...analyses.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([pageNumber, analysis]) => ({ pageNumber, analysis }));
+
+    // 結合Markdown（full.md）
+    const markdownParts = analyzedPages
+      .map((page) => page.analysis.markdown.trim())
+      .filter((markdown) => markdown !== '');
+    if (markdownParts.length > 0) {
       await store.put(
         r2FullMarkdownKey(document.user_id, document.id),
-        parts.join('\n\n'),
+        markdownParts.join('\n\n'),
         'text/markdown',
       );
     }
@@ -172,16 +177,22 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
       });
       await db.updateDocument(document.id, { status: 'failed' });
       log(`job ${job.id} finished with ${failed} failed page(s)`);
-    } else {
-      await db.updateJob(job.id, {
-        status: 'completed',
-        progress: 100,
-        error: null,
-        finished_at: new Date().toISOString(),
-      });
-      await db.updateDocument(document.id, { status: 'completed' });
-      log(`job ${job.id} completed`);
+      return;
     }
+
+    // M3: Knowledge化（KPS §4〜§6）。全ページ成功時のみ
+    if (deps.knowledge) {
+      await runKnowledgeStage({ db, ...deps.knowledge }, document, analyzedPages, log);
+    }
+
+    await db.updateJob(job.id, {
+      status: 'completed',
+      progress: 100,
+      error: null,
+      finished_at: new Date().toISOString(),
+    });
+    await db.updateDocument(document.id, { status: 'completed' });
+    log(`job ${job.id} completed`);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     log(`job ${job.id} failed: ${message}`);
