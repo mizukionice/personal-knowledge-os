@@ -20,12 +20,16 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 vi.mock('@/lib/api', () => ({
+  ApiRequestError: class ApiRequestError extends Error {},
   documentsApi: {
     list: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),
     remove: vi.fn(),
   },
+  uploadsApi: { getUploadUrl: vi.fn(), complete: vi.fn() },
+  jobsApi: { process: vi.fn(), list: vi.fn() },
+  contentApi: { markdown: vi.fn() },
 }));
 
 const fakeSession = { user: { id: 'user-1', email: 'test@example.com' } } as unknown as Session;

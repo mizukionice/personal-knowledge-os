@@ -61,3 +61,82 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* Document Viewer のMarkdown表示（typographyプラグイン相当の最小セット） */
+.prose-pkos {
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
+.prose-pkos h1,
+.prose-pkos h2,
+.prose-pkos h3,
+.prose-pkos h4 {
+  font-weight: 600;
+  margin-top: 1.75em;
+  margin-bottom: 0.5em;
+  scroll-margin-top: 5rem;
+}
+.prose-pkos h1 {
+  font-size: 1.5rem;
+}
+.prose-pkos h2 {
+  font-size: 1.25rem;
+}
+.prose-pkos h3 {
+  font-size: 1.1rem;
+}
+.prose-pkos p,
+.prose-pkos ul,
+.prose-pkos ol,
+.prose-pkos blockquote {
+  margin-bottom: 0.9em;
+}
+.prose-pkos ul {
+  list-style: disc;
+  padding-left: 1.5em;
+}
+.prose-pkos ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.prose-pkos blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--muted-foreground);
+}
+.prose-pkos table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  font-size: 0.9em;
+}
+.prose-pkos th,
+.prose-pkos td {
+  border: 1px solid var(--border);
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+.prose-pkos th {
+  background: var(--muted);
+  font-weight: 600;
+}
+.prose-pkos code {
+  background: var(--muted);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+}
+.prose-pkos pre {
+  background: var(--muted);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin-bottom: 1em;
+}
+.prose-pkos pre code {
+  background: transparent;
+  padding: 0;
+}
+.prose-pkos strong {
+  font-weight: 600;
+}

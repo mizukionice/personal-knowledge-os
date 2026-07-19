@@ -50,6 +50,13 @@ export function LibraryPage() {
   const { data, isPending, isError, error } = useQuery({
     queryKey: ['documents'],
     queryFn: documentsApi.list,
+    // 処理中の書籍がある間は5秒ポーリング（07_UI_UX）
+    refetchInterval: (query) =>
+      query.state.data?.documents.some(
+        (doc) => doc.status === 'processing' || doc.status === 'uploading',
+      )
+        ? 5000
+        : false,
   });
 
   const deleteMutation = useMutation({

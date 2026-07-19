@@ -4,6 +4,15 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { App } from '@/App';
+import { documentsApi, jobsApi } from '@/lib/api';
+
+vi.mock('@/lib/api', () => ({
+  ApiRequestError: class ApiRequestError extends Error {},
+  documentsApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), remove: vi.fn() },
+  uploadsApi: { getUploadUrl: vi.fn(), complete: vi.fn() },
+  jobsApi: { process: vi.fn(), list: vi.fn() },
+  contentApi: { markdown: vi.fn() },
+}));
 
 const auth = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -124,9 +133,18 @@ describe('ルーティング（ログイン済み）', () => {
   });
 
   it('/documents/:id でDocument Viewerが表示される', async () => {
+    vi.mocked(jobsApi.list).mockResolvedValue({ jobs: [] });
+    vi.mocked(documentsApi.get).mockResolvedValue({
+      document: {
+        id: 'abc-123',
+        title: 'サンプル書籍',
+        status: 'processing',
+        author: null,
+        pages_summary: { total: 1, pending: 1, processing: 0, completed: 0, failed: 0 },
+      } as never,
+    });
     renderAt('/documents/abc-123');
-    expect(await screen.findByRole('heading', { name: 'Document Viewer' })).toBeDefined();
-    expect(screen.getByText(/abc-123/)).toBeDefined();
+    expect(await screen.findByRole('heading', { name: 'サンプル書籍' })).toBeDefined();
   });
 
   it('/settings でアカウント情報とログアウトが表示される', async () => {

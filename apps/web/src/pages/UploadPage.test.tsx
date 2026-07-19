@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { App } from '@/App';
-import { documentsApi, uploadsApi } from '@/lib/api';
+import { documentsApi, jobsApi, uploadsApi } from '@/lib/api';
 
 const auth = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -19,6 +19,15 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 vi.mock('@/lib/api', () => ({
+  ApiRequestError: class ApiRequestError extends Error {
+    constructor(
+      public code: string,
+      message: string,
+      public status: number,
+    ) {
+      super(message);
+    }
+  },
   documentsApi: {
     list: vi.fn(),
     get: vi.fn(),
@@ -28,6 +37,13 @@ vi.mock('@/lib/api', () => ({
   uploadsApi: {
     getUploadUrl: vi.fn(),
     complete: vi.fn(),
+  },
+  jobsApi: {
+    process: vi.fn(),
+    list: vi.fn(),
+  },
+  contentApi: {
+    markdown: vi.fn(),
   },
 }));
 
@@ -71,6 +87,18 @@ beforeEach(() => {
     r2_key: `user-1/${DOC_ID}/uploads/${String(input.page_number ?? 0).padStart(4, '0')}.jpg`,
   }));
   vi.mocked(uploadsApi.complete).mockResolvedValue({ document: { id: DOC_ID } as never });
+  vi.mocked(jobsApi.process).mockResolvedValue({ job: { id: 'job-1' } as never });
+  vi.mocked(jobsApi.list).mockResolvedValue({ jobs: [] });
+  // 遷移先のViewerが描画できる最小のdocument
+  vi.mocked(documentsApi.get).mockResolvedValue({
+    document: {
+      id: DOC_ID,
+      title: 'テスト書籍',
+      status: 'processing',
+      author: null,
+      pages_summary: { total: 2, pending: 2, processing: 0, completed: 0, failed: 0 },
+    } as never,
+  });
   putFetch.mockResolvedValue({ ok: true, status: 200 });
 });
 
@@ -107,8 +135,9 @@ describe('UploadPage', () => {
       `user-1/${DOC_ID}/uploads/0001.jpg`,
       `user-1/${DOC_ID}/uploads/0002.jpg`,
     ]);
-    // 完了後はLibraryへ遷移
-    expect(await screen.findByText('まだ書籍がありません')).toBeDefined();
+    // 完了後は処理を開始してViewer（進捗表示）へ遷移
+    expect(jobsApi.process).toHaveBeenCalledWith(DOC_ID);
+    expect(await screen.findByRole('heading', { name: 'テスト書籍' })).toBeDefined();
   });
 
   it('並び替えでページ順が入れ替わる', async () => {

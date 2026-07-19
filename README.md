@@ -87,7 +87,7 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
 - [x] **M1: Auth + Upload** — ログイン/認証ガード / documents CRUD / R2署名付きURLアップロード / Library・Upload画面
       （完了条件の実機確認にはSupabase/R2の実プロジェクト設定が必要。`.env` と `workers/api/.dev.vars` を参照）
-- [ ] M2: Processing Pipeline（写真→Markdown）
+- [ ] M2: Processing Pipeline（写真→Markdown） — M2-01〜M2-08完了。残り: M2-09（実書籍E2E検証）
 - [ ] M3: Knowledge化 + 検索
 - [ ] M4: 引用付きチャット
 - [ ] M5: Hardening

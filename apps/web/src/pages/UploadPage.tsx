@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowDown, ArrowUp, FileText, Image, Loader2, X } from 'lucide-react';
 import { IMAGE_MAX_BYTES, PDF_MAX_BYTES, type UploadContentType } from '@pkos/shared';
 
-import { documentsApi, uploadsApi } from '@/lib/api';
+import { ApiRequestError, documentsApi, jobsApi, uploadsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -177,7 +177,16 @@ export function UploadPage() {
         .map((item) => results.get(item.id))
         .filter((key): key is string => Boolean(key));
       await uploadsApi.complete(docId, orderedKeys);
-      navigate('/');
+      // アップロード完了後に処理を開始し、進捗はViewerで表示する（07_UI_UX）
+      try {
+        await jobsApi.process(docId);
+      } catch (e) {
+        // 既にジョブがある場合（422）は進捗表示に進むだけでよい
+        if (!(e instanceof ApiRequestError && e.status === 422)) {
+          throw e;
+        }
+      }
+      navigate(`/documents/${docId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'アップロードに失敗しました。');
     } finally {
