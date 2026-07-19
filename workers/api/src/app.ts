@@ -4,9 +4,11 @@ import { cors } from 'hono/cors';
 import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
+import { conceptsRoute, documentConceptsRoute } from './routes/concepts';
 import { contentRoute } from './routes/content';
 import { documentsRoute } from './routes/documents';
 import { jobsRoute, processRoute } from './routes/jobs';
+import { searchRoute } from './routes/search';
 import { uploadsRoute } from './routes/uploads';
 import type { AppEnv } from './types';
 
@@ -33,7 +35,10 @@ export function createApp() {
   v1.route('/documents', uploadsRoute);
   v1.route('/documents', processRoute);
   v1.route('/documents', contentRoute);
+  v1.route('/documents', documentConceptsRoute);
   v1.route('/jobs', jobsRoute);
+  v1.route('/search', searchRoute);
+  v1.route('/concepts', conceptsRoute);
 
   app.route('/v1', v1);
 

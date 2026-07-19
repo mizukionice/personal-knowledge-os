@@ -19,6 +19,10 @@ export function fakeQuery(result: FakeResult) {
     range: () => q,
     limit: () => q,
     eq: () => q,
+    ilike: () => q,
+    or: () => q,
+    contains: () => q,
+    in: () => q,
     single: () => Promise.resolve(result),
     maybeSingle: () => Promise.resolve(result),
     then: (
@@ -30,7 +34,10 @@ export function fakeQuery(result: FakeResult) {
 }
 
 /** table名→結果（配列なら呼び出し順に消費、最後の要素を繰り返す）からfrom()を組み立てる */
-export function fakeDb(resultsByTable: Record<string, FakeResult | FakeResult[]>) {
+export function fakeDb(
+  resultsByTable: Record<string, FakeResult | FakeResult[]>,
+  rpcResults: Record<string, FakeResult> = {},
+) {
   const callCount: Record<string, number> = {};
   const from = vi.fn((table: string) => {
     const entry = resultsByTable[table];
@@ -42,5 +49,12 @@ export function fakeDb(resultsByTable: Record<string, FakeResult | FakeResult[]>
     callCount[table] = (callCount[table] ?? 0) + 1;
     return fakeQuery(results[index] as FakeResult);
   });
-  return { from };
+  const rpc = vi.fn(async (fn: string) => {
+    const result = rpcResults[fn];
+    if (result === undefined) {
+      throw new Error(`unexpected rpc: ${fn}`);
+    }
+    return result;
+  });
+  return { from, rpc };
 }

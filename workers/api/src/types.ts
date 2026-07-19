@@ -7,6 +7,8 @@ export interface Env {
   GITHUB_REPO: string;
   /** R2バケット（wrangler binding） */
   R2?: R2Bucket;
+  /** Workers AI（検索クエリのembedding用） */
+  AI?: Ai;
   /** R2 S3互換APIの署名用（wrangler secret） */
   R2_ACCESS_KEY_ID: string;
   R2_SECRET_ACCESS_KEY: string;
