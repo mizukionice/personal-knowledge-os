@@ -13,7 +13,7 @@ SUPABASE_ANON_KEY = "sb_publishable_IUP8nQMT9-nVmgsc5G-eLg_SGiRiMXu"
 ALLOWED_ORIGIN = "*"
 CF_ACCOUNT_ID = "your-cloudflare-account-id"
 R2_BUCKET = "personal-knowledge-os"
-GITHUB_REPO = "your-github-user/personal-knowledge-os"
+GITHUB_REPO = "mizukionice/personal-knowledge-os"
 
 [[r2_buckets]]
 binding = "R2"
