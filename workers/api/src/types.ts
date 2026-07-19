@@ -3,6 +3,8 @@ export interface Env {
   SUPABASE_ANON_KEY: string;
   SUPABASE_JWT_SECRET: string;
   GITHUB_DISPATCH_TOKEN: string;
+  /** repository_dispatch先の "owner/repo" */
+  GITHUB_REPO: string;
   /** R2バケット（wrangler binding） */
   R2?: R2Bucket;
   /** R2 S3互換APIの署名用（wrangler secret） */

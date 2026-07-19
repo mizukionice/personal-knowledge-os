@@ -5,6 +5,7 @@ import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
 import { documentsRoute } from './routes/documents';
+import { jobsRoute, processRoute } from './routes/jobs';
 import { uploadsRoute } from './routes/uploads';
 import type { AppEnv } from './types';
 
@@ -29,6 +30,8 @@ export function createApp() {
 
   v1.route('/documents', documentsRoute);
   v1.route('/documents', uploadsRoute);
+  v1.route('/documents', processRoute);
+  v1.route('/jobs', jobsRoute);
 
   app.route('/v1', v1);
 
