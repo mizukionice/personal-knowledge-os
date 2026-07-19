@@ -7,8 +7,9 @@ main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
 [vars]
-SUPABASE_URL = "https://your-project.supabase.co"
-SUPABASE_ANON_KEY = "your-anon-key"
+# URLとanon (publishable) keyは公開前提の値（フロントのバンドルにも含まれる）
+SUPABASE_URL = "https://lieujxeumqpgribvzoiv.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_IUP8nQMT9-nVmgsc5G-eLg_SGiRiMXu"
 ALLOWED_ORIGIN = "*"
 CF_ACCOUNT_ID = "your-cloudflare-account-id"
 R2_BUCKET = "personal-knowledge-os"
