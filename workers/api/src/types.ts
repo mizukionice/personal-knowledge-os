@@ -3,8 +3,13 @@ export interface Env {
   SUPABASE_ANON_KEY: string;
   SUPABASE_JWT_SECRET: string;
   GITHUB_DISPATCH_TOKEN: string;
-  /** R2バケット（wrangler binding。M1-05で設定） */
+  /** R2バケット（wrangler binding） */
   R2?: R2Bucket;
+  /** R2 S3互換APIの署名用（wrangler secret） */
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  CF_ACCOUNT_ID: string;
+  R2_BUCKET: string;
   /** CORSで許可するオリジン。未設定なら "*"（開発用） */
   ALLOWED_ORIGIN?: string;
   /** rate limitの1分あたり上限。未設定なら60 */

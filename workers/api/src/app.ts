@@ -5,6 +5,7 @@ import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
 import { documentsRoute } from './routes/documents';
+import { uploadsRoute } from './routes/uploads';
 import type { AppEnv } from './types';
 
 /** テストごとに独立したrate limit状態を持てるようfactoryにしている */
@@ -27,6 +28,7 @@ export function createApp() {
   v1.get('/me', (c) => c.json({ user_id: c.get('userId') }));
 
   v1.route('/documents', documentsRoute);
+  v1.route('/documents', uploadsRoute);
 
   app.route('/v1', v1);
 

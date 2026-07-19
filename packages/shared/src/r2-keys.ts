@@ -25,3 +25,18 @@ function padPage(pageNumber: number): string {
   }
   return String(pageNumber).padStart(4, '0');
 }
+
+/** アップロード原本（写真1枚 = 1ページ）。extはcontent_typeから決まる（jpg/png/webp） */
+export function r2UploadImageKey(
+  userId: string,
+  documentId: string,
+  pageNumber: number,
+  ext: 'jpg' | 'png' | 'webp',
+): string {
+  return `${r2Prefix(userId, documentId)}uploads/${padPage(pageNumber)}.${ext}`;
+}
+
+/** アップロード原本（PDFは1ドキュメント1ファイル） */
+export function r2UploadPdfKey(userId: string, documentId: string): string {
+  return `${r2Prefix(userId, documentId)}uploads/original.pdf`;
+}

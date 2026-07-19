@@ -1,5 +1,6 @@
 # Cloudflare Workers API
-# secrets（SUPABASE_JWT_SECRET, GITHUB_DISPATCH_TOKEN）は `wrangler secret put` で設定する。
+# secrets（SUPABASE_JWT_SECRET, GITHUB_DISPATCH_TOKEN, R2_ACCESS_KEY_ID,
+# R2_SECRET_ACCESS_KEY）は `wrangler secret put` で設定する。
 # ローカル開発は .dev.vars（gitignore済み）に置く。
 name = "pkos-api"
 main = "src/index.ts"
@@ -9,6 +10,12 @@ compatibility_date = "2026-07-01"
 SUPABASE_URL = "https://your-project.supabase.co"
 SUPABASE_ANON_KEY = "your-anon-key"
 ALLOWED_ORIGIN = "*"
+CF_ACCOUNT_ID = "your-cloudflare-account-id"
+R2_BUCKET = "personal-knowledge-os"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "personal-knowledge-os"
 
 [observability]
 enabled = true

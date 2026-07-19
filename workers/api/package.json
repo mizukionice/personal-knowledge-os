@@ -12,6 +12,7 @@
   "dependencies": {
     "@pkos/shared": "workspace:*",
     "@supabase/supabase-js": "^2.110.7",
+    "aws4fetch": "^1.0.20",
     "hono": "^4.12.30",
     "zod": "^4.4.3"
   },
