@@ -32,7 +32,7 @@
 
 ```
 apps/web            React SPA（Vite + Tailwind + shadcn/ui + React Router）
-workers/api         Cloudflare Workers API（M1で実装）
+workers/api         Cloudflare Workers API（Hono + JWT認証 + rate limit）
 workers/batch       GitHub Actionsバッチランナー（M2で実装）
 packages/shared     共有型・ユーティリティ（R2キー命名等）
 packages/kps        Knowledge Pipeline System（M2以降で実装）
@@ -60,6 +60,14 @@ pnpm test          # 全workspaceのテスト（Vitest）
 
 pnpm --filter @pkos/web dev      # web開発サーバー（http://localhost:5173）
 pnpm --filter @pkos/web build    # web本番ビルド（dist/）
+pnpm --filter @pkos/api dev      # API開発サーバー（wrangler dev, http://localhost:8787）
+```
+
+APIのローカル開発では `workers/api/.dev.vars`（gitignore済み）にsecretsを置く:
+
+```
+SUPABASE_JWT_SECRET=...   # Supabaseダッシュボード > Settings > API > JWT Secret
+GITHUB_DISPATCH_TOKEN=... # M2で使用
 ```
 
 ### Supabase
@@ -78,7 +86,7 @@ pnpm --filter @pkos/web build    # web本番ビルド（dist/）
 ## 進捗
 
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
-- [ ] M1: Auth + Upload — M1-01, M1-02完了（webセットアップ / Supabase Authログイン・認証ガード）
+- [ ] M1: Auth + Upload — M1-01〜M1-03完了（webセットアップ / Supabase Auth / API基盤: Hono + JWT + rate limit）
 - [ ] M2: Processing Pipeline（写真→Markdown）
 - [ ] M3: Knowledge化 + 検索
 - [ ] M4: 引用付きチャット

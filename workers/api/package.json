@@ -4,14 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@pkos/shared": "workspace:*"
+    "@pkos/shared": "workspace:*",
+    "hono": "^4.12.30"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260717.1",
     "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "wrangler": "^4.112.0"
   }
 }

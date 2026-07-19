@@ -4,3 +4,7 @@ packages:
   - packages/*
 allowBuilds:
   esbuild: true
+  # wrangler devのローカルWorkersランタイム
+  workerd: true
+  # wranglerの画像最適化用（未使用のためビルド不許可）
+  sharp: false

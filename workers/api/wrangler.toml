@@ -1,0 +1,13 @@
+# Cloudflare Workers API
+# secrets（SUPABASE_JWT_SECRET, GITHUB_DISPATCH_TOKEN）は `wrangler secret put` で設定する。
+# ローカル開発は .dev.vars（gitignore済み）に置く。
+name = "pkos-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[vars]
+SUPABASE_URL = "https://your-project.supabase.co"
+ALLOWED_ORIGIN = "*"
+
+[observability]
+enabled = true
