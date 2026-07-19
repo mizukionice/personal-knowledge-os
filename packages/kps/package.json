@@ -10,10 +10,13 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.3",
     "@pkos/shared": "workspace:*",
-    "mupdf": "^1.28.0"
+    "mupdf": "^1.28.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"
   }
