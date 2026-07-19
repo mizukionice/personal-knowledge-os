@@ -1,4 +1,4 @@
-import type { Document, PagesSummary } from '@pkos/shared';
+import type { Document, PagesSummary, UploadUrlRequest, UploadUrlResponse } from '@pkos/shared';
 
 import { supabase } from '@/lib/supabase';
 
@@ -58,4 +58,17 @@ export const documentsApi = {
       body: JSON.stringify(input),
     }),
   remove: (id: string) => apiFetch<void>(`/documents/${id}`, { method: 'DELETE' }),
+};
+
+export const uploadsApi = {
+  getUploadUrl: (documentId: string, input: UploadUrlRequest) =>
+    apiFetch<UploadUrlResponse>(`/documents/${documentId}/upload-url`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  complete: (documentId: string, r2Keys: string[]) =>
+    apiFetch<{ document: Document }>(`/documents/${documentId}/uploads/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ r2_keys: r2Keys }),
+    }),
 };
