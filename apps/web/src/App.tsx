@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from '@/auth/AuthProvider';
@@ -11,20 +13,32 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { UploadPage } from '@/pages/UploadPage';
 
 export function App() {
+  // Appマウントごとに独立したキャッシュ（テスト間の汚染防止）
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: false, refetchOnWindowFocus: false },
+        },
+      }),
+  );
+
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<RequireAuth />}>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<LibraryPage />} />
-            <Route path="/upload" element={<UploadPage />} />
-            <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<NotFoundPage />} />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<RequireAuth />}>
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<LibraryPage />} />
+              <Route path="/upload" element={<UploadPage />} />
+              <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </AuthProvider>
+        </Routes>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
