@@ -1,5 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 
+import { AuthProvider } from '@/auth/AuthProvider';
+import { RequireAuth } from '@/auth/RequireAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DocumentViewerPage } from '@/pages/DocumentViewerPage';
 import { LibraryPage } from '@/pages/LibraryPage';
@@ -8,18 +10,21 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { UploadPage } from '@/pages/UploadPage';
 
-// 認証ガードは M1-02（Supabase Auth）で追加する
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<LibraryPage />} />
-        <Route path="/upload" element={<UploadPage />} />
-        <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<RequireAuth />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<LibraryPage />} />
+            <Route path="/upload" element={<UploadPage />} />
+            <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </AuthProvider>
   );
 }

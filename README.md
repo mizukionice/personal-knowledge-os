@@ -78,7 +78,7 @@ pnpm --filter @pkos/web build    # web本番ビルド（dist/）
 ## 進捗
 
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
-- [ ] M1: Auth + Upload — M1-01完了（webセットアップ: Vite + React + Tailwind + shadcn/ui + ルーティング）
+- [ ] M1: Auth + Upload — M1-01, M1-02完了（webセットアップ / Supabase Authログイン・認証ガード）
 - [ ] M2: Processing Pipeline（写真→Markdown）
 - [ ] M3: Knowledge化 + 検索
 - [ ] M4: 引用付きチャット
