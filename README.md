@@ -31,7 +31,7 @@
 ## リポジトリ構成
 
 ```
-apps/web            React SPA（M1で実装）
+apps/web            React SPA（Vite + Tailwind + shadcn/ui + React Router）
 workers/api         Cloudflare Workers API（M1で実装）
 workers/batch       GitHub Actionsバッチランナー（M2で実装）
 packages/shared     共有型・ユーティリティ（R2キー命名等）
@@ -57,6 +57,9 @@ pnpm lint          # ESLint（リポジトリ全体）
 pnpm format:check  # Prettier チェック（pnpm format で自動整形）
 pnpm typecheck     # 全workspaceの型チェック
 pnpm test          # 全workspaceのテスト（Vitest）
+
+pnpm --filter @pkos/web dev      # web開発サーバー（http://localhost:5173）
+pnpm --filter @pkos/web build    # web本番ビルド（dist/）
 ```
 
 ### Supabase
@@ -75,7 +78,7 @@ pnpm test          # 全workspaceのテスト（Vitest）
 ## 進捗
 
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
-- [ ] M1: Auth + Upload
+- [ ] M1: Auth + Upload — M1-01完了（webセットアップ: Vite + React + Tailwind + shadcn/ui + ルーティング）
 - [ ] M2: Processing Pipeline（写真→Markdown）
 - [ ] M3: Knowledge化 + 検索
 - [ ] M4: 引用付きチャット
