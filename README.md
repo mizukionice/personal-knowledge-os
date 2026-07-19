@@ -89,7 +89,7 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
       （完了条件の実機確認にはSupabase/R2の実プロジェクト設定が必要。`.env` と `workers/api/.dev.vars` を参照）
 - [x] **M2: Processing Pipeline** — アップロード→Actions→Claude解析→構造化Markdown表示をE2Eで確認済み
       （M2-09の写真10ページ検証のみ残タスク。実験ログはdocs/10_RESEARCH.md）
-- [ ] M3: Knowledge化 + 検索
+- [ ] M3: Knowledge化 + 検索 — M3-01〜M3-08完了。残り: M3-09（2冊以上での横断リンク検証）
 - [ ] M4: 引用付きチャット
 - [ ] M5: Hardening
 

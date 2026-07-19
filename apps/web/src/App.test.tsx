@@ -11,6 +11,8 @@ vi.mock('@/lib/api', () => ({
   documentsApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), remove: vi.fn() },
   uploadsApi: { getUploadUrl: vi.fn(), complete: vi.fn() },
   jobsApi: { process: vi.fn(), list: vi.fn() },
+  searchApi: { search: vi.fn() },
+  conceptsApi: { list: vi.fn(), get: vi.fn(), forDocument: vi.fn() },
   contentApi: { markdown: vi.fn() },
 }));
 

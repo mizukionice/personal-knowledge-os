@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import type { PagesSummary } from '@pkos/shared';
 
 import { App } from '@/App';
-import { contentApi, documentsApi, jobsApi } from '@/lib/api';
+import { conceptsApi, contentApi, documentsApi, jobsApi } from '@/lib/api';
 import type { DocumentWithSummary } from '@/lib/api';
 
 const auth = vi.hoisted(() => ({
@@ -25,6 +25,8 @@ vi.mock('@/lib/api', () => ({
   documentsApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), remove: vi.fn() },
   uploadsApi: { getUploadUrl: vi.fn(), complete: vi.fn() },
   jobsApi: { process: vi.fn(), list: vi.fn() },
+  searchApi: { search: vi.fn() },
+  conceptsApi: { list: vi.fn(), get: vi.fn(), forDocument: vi.fn() },
   contentApi: { markdown: vi.fn() },
 }));
 
@@ -67,6 +69,7 @@ beforeEach(() => {
     data: { subscription: { unsubscribe: vi.fn() } },
   });
   vi.mocked(jobsApi.list).mockResolvedValue({ jobs: [] });
+  vi.mocked(conceptsApi.forDocument).mockResolvedValue({ concepts: [] });
 });
 
 afterEach(cleanup);
@@ -87,6 +90,21 @@ describe('DocumentViewerPage', () => {
     const tocNav = screen.getByRole('navigation', { name: '目次' });
     expect(tocNav.textContent).toContain('第1章 序論');
     expect(tocNav.textContent).toContain('1.1 背景');
+  });
+
+  it('完了した書籍では概念サイドバーを表示する', async () => {
+    vi.mocked(documentsApi.get).mockResolvedValue({ document: doc() });
+    vi.mocked(contentApi.markdown).mockResolvedValue({ markdown: '# 見出し\n\n本文' });
+    vi.mocked(conceptsApi.forDocument).mockResolvedValue({
+      concepts: [{ id: 'concept-1', canonical_name: 'EVM', importance: 0.8, mention_count: 3 }],
+    });
+
+    renderViewer();
+
+    const sidebar = await screen.findByRole('complementary', { name: 'この本の概念' });
+    expect(sidebar.textContent).toContain('EVM');
+    const link = within(sidebar).getByRole('link', { name: /EVM/ });
+    expect(link.getAttribute('href')).toBe('/concepts/concept-1');
   });
 
   it('危険なHTMLはsanitizeされる', async () => {

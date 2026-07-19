@@ -5,7 +5,9 @@ import { Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { RequireAuth } from '@/auth/RequireAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { ConceptPage } from '@/pages/ConceptPage';
 import { DocumentViewerPage } from '@/pages/DocumentViewerPage';
+import { SearchPage } from '@/pages/SearchPage';
 import { LibraryPage } from '@/pages/LibraryPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -33,6 +35,8 @@ export function App() {
               <Route path="/" element={<LibraryPage />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/concepts/:conceptId" element={<ConceptPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>

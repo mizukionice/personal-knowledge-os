@@ -6,7 +6,9 @@ import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 import { AlertTriangle, Loader2, RotateCcw } from 'lucide-react';
 
-import { contentApi, documentsApi, jobsApi } from '@/lib/api';
+import { Link } from 'react-router-dom';
+
+import { conceptsApi, contentApi, documentsApi, jobsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
 
@@ -76,6 +78,12 @@ export function DocumentViewerPage() {
     // 全部失敗した書籍でも、部分的に生成済みのfull.mdがあれば表示する
     enabled: Boolean(documentId) && (doc?.status === 'completed' || doc?.status === 'failed'),
     retry: false,
+  });
+
+  const conceptsQuery = useQuery({
+    queryKey: ['document-concepts', documentId],
+    queryFn: () => conceptsApi.forDocument(documentId as string),
+    enabled: Boolean(documentId) && doc?.status === 'completed',
   });
 
   const reprocess = useMutation({
@@ -188,6 +196,24 @@ export function DocumentViewerPage() {
               {markdownQuery.data.markdown}
             </ReactMarkdown>
           </article>
+          {conceptsQuery.data && conceptsQuery.data.concepts.length > 0 && (
+            <aside aria-label="この本の概念" className="hidden w-56 shrink-0 xl:block">
+              <p className="text-sm font-medium">この本の概念</p>
+              <ul className="mt-2 space-y-1 text-sm">
+                {conceptsQuery.data.concepts.map((concept) => (
+                  <li key={concept.id}>
+                    <Link
+                      to={`/concepts/${concept.id}`}
+                      className="flex items-baseline justify-between gap-2 rounded px-2 py-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    >
+                      <span className="truncate">{concept.canonical_name}</span>
+                      <span className="shrink-0 text-xs">{concept.mention_count}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
         </div>
       )}
 
