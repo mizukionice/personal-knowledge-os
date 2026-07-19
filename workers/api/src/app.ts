@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
+import { documentsRoute } from './routes/documents';
 import type { AppEnv } from './types';
 
 /** テストごとに独立したrate limit状態を持てるようfactoryにしている */
@@ -24,6 +25,8 @@ export function createApp() {
 
   // 認証確認・デバッグ用
   v1.get('/me', (c) => c.json({ user_id: c.get('userId') }));
+
+  v1.route('/documents', documentsRoute);
 
   app.route('/v1', v1);
 

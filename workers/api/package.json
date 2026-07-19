@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@pkos/shared": "workspace:*",
-    "hono": "^4.12.30"
+    "@supabase/supabase-js": "^2.110.7",
+    "hono": "^4.12.30",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260717.1",

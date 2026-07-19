@@ -86,7 +86,7 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
 ## 進捗
 
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
-- [ ] M1: Auth + Upload — M1-01〜M1-03完了（webセットアップ / Supabase Auth / API基盤: Hono + JWT + rate limit）
+- [ ] M1: Auth + Upload — M1-01〜M1-04完了（webセットアップ / Supabase Auth / API基盤 / documents CRUD）
 - [ ] M2: Processing Pipeline（写真→Markdown）
 - [ ] M3: Knowledge化 + 検索
 - [ ] M4: 引用付きチャット
