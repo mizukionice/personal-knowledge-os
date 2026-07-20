@@ -14,3 +14,4 @@ export * from './prompts/concept-extractor.v1';
 export * from './prompts/page-analyzer.v1';
 export * from './prompts/relation-extractor.v1';
 export * from './relation-extractor/llm-relation-extractor';
+export * from './retriever/hybrid-retriever';
