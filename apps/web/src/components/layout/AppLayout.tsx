@@ -1,11 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { BookOpen, Library, Search, Settings, Upload } from 'lucide-react';
+import { BookOpen, Library, MessageCircle, Search, Settings, Upload } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { to: '/', label: 'Library', icon: Library, end: true },
   { to: '/search', label: 'Search', icon: Search, end: false },
+  { to: '/chat', label: 'Chat', icon: MessageCircle, end: false },
   { to: '/upload', label: 'Upload', icon: Upload, end: false },
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ];

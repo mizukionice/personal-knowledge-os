@@ -127,6 +127,87 @@ export const conceptsApi = {
     apiFetch<{ concepts: ConceptSummary[] }>(`/documents/${documentId}/concepts`),
 };
 
+export interface ChatCitation {
+  document_id: string;
+  title: string;
+  page: number;
+  section_path: string | null;
+}
+
+export interface ChatStreamResult {
+  citations: ChatCitation[];
+  used_general_knowledge: boolean;
+}
+
+export interface ChatHistoryTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export const chatApi = {
+  /** POST /chat のSSEを読み、deltaごとにonDeltaを呼ぶ。doneイベントの内容を返す */
+  stream: async (
+    message: string,
+    history: ChatHistoryTurn[],
+    onDelta: (text: string) => void,
+  ): Promise<ChatStreamResult> => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+
+    const res = await fetch(`${API_BASE}/v1/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ message, history }),
+    });
+    if (!res.ok || !res.body) {
+      const body: unknown = await res.json().catch(() => null);
+      const err = (body as { error?: { code?: string; message?: string } } | null)?.error;
+      throw new ApiRequestError(
+        err?.code ?? 'internal',
+        err?.message ?? `chat failed with status ${res.status}`,
+        res.status,
+      );
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result: ChatStreamResult | null = null;
+    let streamError: string | null = null;
+
+    const handleBlock = (block: string) => {
+      const eventMatch = /^event: (.+)$/m.exec(block);
+      const dataMatch = /^data: (.+)$/m.exec(block);
+      if (!eventMatch || !dataMatch) return;
+      const payload: unknown = JSON.parse(dataMatch[1]!);
+      if (eventMatch[1] === 'delta') {
+        onDelta((payload as { text: string }).text);
+      } else if (eventMatch[1] === 'done') {
+        result = payload as ChatStreamResult;
+      } else if (eventMatch[1] === 'error') {
+        streamError = (payload as { message: string }).message;
+      }
+    };
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split('\n\n');
+      buffer = blocks.pop() ?? '';
+      blocks.forEach(handleBlock);
+    }
+    if (buffer.trim() !== '') handleBlock(buffer);
+
+    if (streamError) throw new ApiRequestError('internal', streamError, 500);
+    if (!result) throw new ApiRequestError('internal', '回答ストリームが途中で終了しました', 500);
+    return result;
+  },
+};
+
 export const uploadsApi = {
   getUploadUrl: (documentId: string, input: UploadUrlRequest) =>
     apiFetch<UploadUrlResponse>(`/documents/${documentId}/upload-url`, {
