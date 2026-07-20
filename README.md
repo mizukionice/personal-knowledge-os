@@ -87,8 +87,8 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
 - [x] **M1: Auth + Upload** — ログイン/認証ガード / documents CRUD / R2署名付きURLアップロード / Library・Upload画面
       （完了条件の実機確認にはSupabase/R2の実プロジェクト設定が必要。`.env` と `workers/api/.dev.vars` を参照）
-- [x] **M2: Processing Pipeline** — アップロード→Actions→Claude解析→構造化Markdown表示をE2Eで確認済み
-      （M2-09の写真10ページ検証のみ残タスク。実験ログはdocs/10_RESEARCH.md）
+- [x] **M2: Processing Pipeline** — 完了。青空文庫PDFに加え、写真撮影した実書籍10ページ（専門書）でも
+      E2E検証済み（M2-09。実験ログはdocs/10_RESEARCH.md）
 - [x] M3: Knowledge化 + 検索 — 完了（M3-09: 3冊処理で「芥川龍之介」「青空文庫」の概念横断同定を確認）
 - [ ] M4: 引用付きチャット
 - [ ] M5: Hardening
