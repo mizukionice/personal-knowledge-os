@@ -8,6 +8,7 @@ export * from './llm/json';
 export * from './llm/llm-client';
 export * from './page-analyzer/claude-page-analyzer';
 export * from './page-analyzer/claude-vlm-client';
+export * from './page-analyzer/image-preprocessor';
 export * from './page-analyzer/vlm-client';
 export * from './prompts/concept-extractor.v1';
 export * from './prompts/page-analyzer.v1';

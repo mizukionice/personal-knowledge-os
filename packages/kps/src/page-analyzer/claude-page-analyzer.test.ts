@@ -32,6 +32,33 @@ function mockVlm(...responses: string[]) {
 }
 
 describe('ClaudePageAnalyzer', () => {
+  it('maxBytes超過の画像は縮小されてからVLMに渡る', async () => {
+    // 実画像が必要なため、mupdfでPNGを生成する（image-preprocessor.test.tsと同方式）
+    const mupdf = await import('mupdf');
+    const pdf = new TextEncoder().encode(
+      `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] >> endobj
+trailer << /Root 1 0 R >>
+%%EOF`,
+    );
+    const doc = mupdf.Document.openDocument(pdf, 'application/pdf');
+    const png = doc
+      .loadPage(0)
+      .toPixmap(mupdf.Matrix.scale(4, 4), mupdf.ColorSpace.DeviceRGB, false)
+      .asPNG();
+
+    const vlm = mockVlm(VALID_OUTPUT);
+    const analyzer = new ClaudePageAnalyzer(vlm, { maxBytes: png.length - 1 });
+
+    await analyzer.analyze(makeInput({ image: { data: png, mediaType: 'image/png' } }));
+
+    const request = vlm.complete.mock.calls[0]![0];
+    expect(request.image.mediaType).toBe('image/jpeg');
+    expect(request.image.data.length).toBeLessThan(png.length);
+  });
+
   it('有効なJSON出力をPageAnalysisとして返す', async () => {
     const vlm = mockVlm(VALID_OUTPUT);
     const analyzer = new ClaudePageAnalyzer(vlm);

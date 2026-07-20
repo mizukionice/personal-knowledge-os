@@ -7,6 +7,7 @@ import {
   buildRepairUserText,
   PAGE_ANALYZER_SYSTEM_PROMPT_V1,
 } from '../prompts/page-analyzer.v1';
+import { prepareImageForVlm, type PrepareImageOptions } from './image-preprocessor';
 import type { VlmClient } from './vlm-client';
 
 export class PageAnalysisParseError extends Error {
@@ -46,13 +47,18 @@ function parseAnalysis(raw: string): ParseResult {
  * VLM呼び出し自体は注入されたVlmClientに委譲する。
  */
 export class ClaudePageAnalyzer implements PageAnalyzer {
-  constructor(private readonly vlm: VlmClient) {}
+  constructor(
+    private readonly vlm: VlmClient,
+    private readonly imageOptions: PrepareImageOptions = {},
+  ) {}
 
   async analyze(input: PageAnalyzerInput): Promise<PageAnalysis> {
+    // Claude APIのbase64 10MB制限を超える写真を縮小する（修復リトライでも同じ画像を使う）
+    const image = prepareImageForVlm(input.image, this.imageOptions);
     const userText = buildPageAnalyzerUserText(input.pageNumber, input.previousContextSummary);
     const raw = await this.vlm.complete({
       system: PAGE_ANALYZER_SYSTEM_PROMPT_V1,
-      image: input.image,
+      image,
       turns: [{ role: 'user', text: userText }],
     });
 
@@ -64,7 +70,7 @@ export class ClaudePageAnalyzer implements PageAnalyzer {
     // パース失敗時は1回だけ修復リトライ（KPS §3）
     const repaired = await this.vlm.complete({
       system: PAGE_ANALYZER_SYSTEM_PROMPT_V1,
-      image: input.image,
+      image,
       turns: [
         { role: 'user', text: userText },
         { role: 'assistant', text: raw },
