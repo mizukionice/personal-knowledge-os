@@ -1,0 +1,59 @@
+name: Deploy
+
+# 本番デプロイは手動起動のみ（誤って毎pushでデプロイしないため）。
+# 必要なGitHub Secrets:
+#   CLOUDFLARE_API_TOKEN   … Workers Scripts:Edit + Pages:Edit 権限のAPIトークン
+#   CLOUDFLARE_ACCOUNT_ID  … Cloudflareアカウント ID
+#   VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY / VITE_API_BASE_URL … webビルド用（公開値）
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'デプロイ対象'
+        required: true
+        default: 'both'
+        type: choice
+        options: [both, api, web]
+
+jobs:
+  deploy-api:
+    if: ${{ inputs.target == 'both' || inputs.target == 'api' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # secretsは事前に `wrangler secret put` 済みの想定（README運用手順参照）。
+      # ここではコード/varsのみをデプロイする。
+      - name: Deploy Workers API
+        run: pnpm --filter @pkos/api exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-web:
+    if: ${{ inputs.target == 'both' || inputs.target == 'web' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build web
+        run: pnpm --filter @pkos/web build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      - name: Deploy Cloudflare Pages
+        run: pnpm --filter @pkos/web exec wrangler pages deploy dist --project-name pkos-web --branch main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

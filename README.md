@@ -94,6 +94,49 @@ ANTHROPIC_API_KEY=...     # M4 Chat（/chat）で使用
 
 スキーマ定義は `docs/05_DATABASE.md`、実体は `supabase/migrations/` のSQL。変更は必ず新しいmigrationファイルで行う。
 
+## 本番デプロイ / 運用
+
+デプロイ対象は3つ: **API（Cloudflare Workers）**、**Web（Cloudflare Pages）**、**バッチ（GitHub Actions）**。
+
+### 1. Workers APIのsecrets（初回のみ / 値変更時）
+
+`[vars]`（`wrangler.toml`）は公開値。秘密値は `wrangler secret put` で登録する:
+
+```sh
+cd workers/api
+for s in SUPABASE_JWT_SECRET GITHUB_DISPATCH_TOKEN R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY ANTHROPIC_API_KEY; do
+  npx wrangler secret put "$s"   # プロンプトに値を貼り付け
+done
+```
+
+### 2. Cloudflare Pagesプロジェクト（初回のみ）
+
+```sh
+cd apps/web
+npx wrangler pages project create pkos-web --production-branch main
+```
+
+`ALLOWED_ORIGIN`（`wrangler.toml`）を本番のPagesドメインに絞ると安全（既定は開発用の `*`）。
+
+### 3. デプロイ
+
+- **手動（ローカル）**: `pnpm --filter @pkos/api exec wrangler deploy` / `pnpm --filter @pkos/web build && pnpm --filter @pkos/web exec wrangler pages deploy dist --project-name pkos-web`
+- **GitHub Actions**: `Deploy` ワークフローを手動起動（`workflow_dispatch`、対象 both/api/web を選択）
+
+`Deploy` ワークフローに必要な **GitHub Secrets**:
+`CLOUDFLARE_API_TOKEN`（Workers Scripts:Edit + Pages:Edit）、`CLOUDFLARE_ACCOUNT_ID`、
+`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_API_BASE_URL`（本番APIのURL）。
+
+### 4. バッチ（`Process Job` ワークフロー）のsecrets
+
+`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `ANTHROPIC_API_KEY` / `CF_ACCOUNT_ID` /
+`CF_AI_TOKEN` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` をリポジトリのActions Secretsに設定する。
+
+### コスト
+
+1冊あたりのAnthropic APIコストはバッチ完了時にActionsログの `[cost]` 行へ出力される（`UsageMeter`）。
+実測値は `docs/10_RESEARCH.md` を参照。
+
 ## 進捗
 
 - [x] **M0: Project Setup** — monorepo / Lint・型・テスト基盤 / CI / DBスキーマ
@@ -103,6 +146,7 @@ ANTHROPIC_API_KEY=...     # M4 Chat（/chat）で使用
       E2E検証済み（M2-09。実験ログはdocs/10_RESEARCH.md）
 - [x] M3: Knowledge化 + 検索 — 完了（M3-09: 3冊処理で「芥川龍之介」「青空文庫」の概念横断同定を確認）
 - [x] M4: 引用付きチャット — 完了（蔵書内2問・蔵書外1問で出典の正確性とハルシネーション無しを確認）
-- [ ] M5: Hardening
+- [x] M5: Hardening — Playwright E2E / セキュリティ確認 / コスト計測（1冊約$1.84）/ deploy.yml・運用手順
+      （本番ライブデプロイは上記「本番デプロイ / 運用」に沿ってユーザーが手動実行）
 
 タスク詳細は `docs/08_TASKS.md`。
