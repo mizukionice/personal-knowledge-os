@@ -68,6 +68,7 @@ APIのローカル開発では `workers/api/.dev.vars`（gitignore済み）にse
 ```
 SUPABASE_JWT_SECRET=...   # Supabaseダッシュボード > Settings > API > JWT Secret
 GITHUB_DISPATCH_TOKEN=... # M2で使用
+ANTHROPIC_API_KEY=...     # M4 Chat（/chat）で使用
 ```
 
 ### Supabase
@@ -90,7 +91,7 @@ GITHUB_DISPATCH_TOKEN=... # M2で使用
 - [x] **M2: Processing Pipeline** — 完了。青空文庫PDFに加え、写真撮影した実書籍10ページ（専門書）でも
       E2E検証済み（M2-09。実験ログはdocs/10_RESEARCH.md）
 - [x] M3: Knowledge化 + 検索 — 完了（M3-09: 3冊処理で「芥川龍之介」「青空文庫」の概念横断同定を確認）
-- [ ] M4: 引用付きチャット
+- [x] M4: 引用付きチャット — 完了（蔵書内2問・蔵書外1問で出典の正確性とハルシネーション無しを確認）
 - [ ] M5: Hardening
 
 タスク詳細は `docs/08_TASKS.md`。
