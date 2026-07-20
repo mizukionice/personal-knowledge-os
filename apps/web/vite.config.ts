@@ -14,5 +14,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // e2e/ はPlaywright（@playwright/test）専用。Vitestからは除外する
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

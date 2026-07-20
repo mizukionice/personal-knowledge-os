@@ -9,3 +9,8 @@ coverage/
 *.log
 .DS_Store
 supabase/.temp/
+
+# Playwright
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/.playwright/

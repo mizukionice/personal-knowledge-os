@@ -63,6 +63,17 @@ pnpm --filter @pkos/web build    # web本番ビルド（dist/）
 pnpm --filter @pkos/api dev      # API開発サーバー（wrangler dev, http://localhost:8787）
 ```
 
+#### E2Eテスト（Playwright）
+
+`web`（:5173）と`api`（:8787）の両dev serverを起動した状態で実行する。
+実Supabase/R2/Workers AIに対して動くため `.env` が必要（テスト用ユーザーを
+自動作成・シードし、終了時に削除する。実データには触れない）。
+
+```sh
+pnpm --filter @pkos/web exec playwright install chromium  # 初回のみ
+pnpm --filter @pkos/web e2e
+```
+
 APIのローカル開発では `workers/api/.dev.vars`（gitignore済み）にsecretsを置く:
 
 ```
