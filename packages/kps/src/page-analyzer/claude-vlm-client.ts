@@ -10,7 +10,9 @@ export interface ClaudeVlmClientOptions {
 }
 
 const DEFAULT_MODEL = 'claude-opus-4-8';
-const DEFAULT_MAX_TOKENS = 8192;
+// adaptive thinkingの思考トークンはmax_tokensの内数。文字の詰まったページで
+// 切り詰めが起こらないよう32000（16K超はストリーミング必須）
+const DEFAULT_MAX_TOKENS = 32000;
 // TDD §5: VLM API呼び出しは指数バックオフで3回リトライ（SDK組み込みのretryを使用）
 const MAX_RETRIES = 3;
 
@@ -51,13 +53,15 @@ export class ClaudeVlmClient implements VlmClient {
       ...rest.map((turn) => ({ role: turn.role, content: turn.text })),
     ];
 
-    const response = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      thinking: { type: 'adaptive' },
-      system: request.system,
-      messages,
-    });
+    const response = await this.client.messages
+      .stream({
+        model: this.model,
+        max_tokens: this.maxTokens,
+        thinking: { type: 'adaptive' },
+        system: request.system,
+        messages,
+      })
+      .finalMessage();
 
     if (response.stop_reason === 'refusal') {
       throw new Error('VLM refused to analyze the page');
