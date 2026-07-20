@@ -4,7 +4,10 @@ import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
 import { chatRequestSchema, type ChatCitation } from '@pkos/shared';
 import type { Embedder, RetrievedChunk } from '@pkos/kps/src/interfaces';
-import { buildReasonerUserText, REASONER_SYSTEM_PROMPT_V1 } from '@pkos/kps/src/prompts/reasoner.v1';
+import {
+  buildReasonerUserText,
+  REASONER_SYSTEM_PROMPT_V1,
+} from '@pkos/kps/src/prompts/reasoner.v1';
 import { parseCitations } from '@pkos/kps/src/reasoner/citations';
 import { compressContext } from '@pkos/kps/src/reasoner/context-compressor';
 import { HybridRetriever, type RetrieverStore } from '@pkos/kps/src/retriever/hybrid-retriever';
@@ -126,7 +129,10 @@ export const chatRoute = new Hono<AppEnv>().post('/', async (c) => {
 
       for await (const event of claudeStream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          await stream.writeSSE({ event: 'delta', data: JSON.stringify({ text: event.delta.text }) });
+          await stream.writeSSE({
+            event: 'delta',
+            data: JSON.stringify({ text: event.delta.text }),
+          });
         }
       }
 

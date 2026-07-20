@@ -17,7 +17,11 @@ trailer << /Root 1 0 R >>
   try {
     const page = doc.loadPage(0);
     try {
-      const pixmap = page.toPixmap(mupdf.Matrix.scale(scale, scale), mupdf.ColorSpace.DeviceRGB, false);
+      const pixmap = page.toPixmap(
+        mupdf.Matrix.scale(scale, scale),
+        mupdf.ColorSpace.DeviceRGB,
+        false,
+      );
       try {
         return pixmap.asPNG();
       } finally {
@@ -78,6 +82,8 @@ describe('prepareImageForVlm', () => {
 
   it('画像として解釈できないデータはエラーになる', () => {
     const junk = new Uint8Array(64).fill(7);
-    expect(() => prepareImageForVlm({ data: junk, mediaType: 'image/png' }, { maxBytes: 8 })).toThrow();
+    expect(() =>
+      prepareImageForVlm({ data: junk, mediaType: 'image/png' }, { maxBytes: 8 }),
+    ).toThrow();
   });
 });
