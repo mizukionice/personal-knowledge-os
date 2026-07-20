@@ -1,6 +1,6 @@
 # Cloudflare Workers API
 # secrets（SUPABASE_JWT_SECRET, GITHUB_DISPATCH_TOKEN, R2_ACCESS_KEY_ID,
-# R2_SECRET_ACCESS_KEY）は `wrangler secret put` で設定する。
+# R2_SECRET_ACCESS_KEY, ANTHROPIC_API_KEY）は `wrangler secret put` で設定する。
 # ローカル開発は .dev.vars（gitignore済み）に置く。
 name = "pkos-api"
 main = "src/index.ts"

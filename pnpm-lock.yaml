@@ -152,6 +152,12 @@ importers:
 
   workers/api:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.112.3
+        version: 0.112.3(zod@4.4.3)
+      '@pkos/kps':
+        specifier: workspace:*
+        version: link:../../packages/kps
       '@pkos/shared':
         specifier: workspace:*
         version: link:../../packages/shared

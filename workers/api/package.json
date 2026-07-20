@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.3",
+    "@pkos/kps": "workspace:*",
     "@pkos/shared": "workspace:*",
     "@supabase/supabase-js": "^2.110.7",
     "aws4fetch": "^1.0.20",

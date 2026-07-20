@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
 import { rateLimit } from './middleware/rate-limit';
+import { chatRoute } from './routes/chat';
 import { conceptsRoute, documentConceptsRoute } from './routes/concepts';
 import { contentRoute } from './routes/content';
 import { documentsRoute } from './routes/documents';
@@ -39,6 +40,7 @@ export function createApp() {
   v1.route('/jobs', jobsRoute);
   v1.route('/search', searchRoute);
   v1.route('/concepts', conceptsRoute);
+  v1.route('/chat', chatRoute);
 
   app.route('/v1', v1);
 

@@ -14,6 +14,8 @@ export interface Env {
   R2_SECRET_ACCESS_KEY: string;
   CF_ACCOUNT_ID: string;
   R2_BUCKET: string;
+  /** Chat（M4）のClaude API呼び出し用（wrangler secret） */
+  ANTHROPIC_API_KEY?: string;
   /** CORSで許可するオリジン。未設定なら "*"（開発用） */
   ALLOWED_ORIGIN?: string;
   /** rate limitの1分あたり上限。未設定なら60 */
