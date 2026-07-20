@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import { toTokenUsage, type TokenUsage } from '../usage/usage-meter';
 import type { LlmClient, LlmRequest } from './llm-client';
 
 export interface ClaudeLlmClientOptions {
@@ -7,6 +8,8 @@ export interface ClaudeLlmClientOptions {
   apiKey?: string;
   model?: string;
   maxTokens?: number;
+  /** コスト計測用（M5-03）。API呼び出しごとにトークン使用量を通知する */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 const DEFAULT_MODEL = 'claude-opus-4-8';
@@ -21,11 +24,13 @@ export class ClaudeLlmClient implements LlmClient {
   private readonly client: Anthropic;
   private readonly model: string;
   private readonly maxTokens: number;
+  private readonly onUsage?: (usage: TokenUsage) => void;
 
   constructor(options: ClaudeLlmClientOptions = {}) {
     this.client = new Anthropic({ apiKey: options.apiKey, maxRetries: MAX_RETRIES });
     this.model = options.model ?? DEFAULT_MODEL;
     this.maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
+    this.onUsage = options.onUsage;
   }
 
   async complete(request: LlmRequest): Promise<string> {
@@ -38,6 +43,8 @@ export class ClaudeLlmClient implements LlmClient {
         messages: [{ role: 'user', content: request.user }],
       })
       .finalMessage();
+
+    this.onUsage?.(toTokenUsage(response.usage));
 
     if (response.stop_reason === 'refusal') {
       throw new Error('LLM refused the request');

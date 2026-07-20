@@ -19,3 +19,4 @@ export * from './reasoner/claude-reasoner';
 export * from './reasoner/context-compressor';
 export * from './relation-extractor/llm-relation-extractor';
 export * from './retriever/hybrid-retriever';
+export * from './usage/usage-meter';

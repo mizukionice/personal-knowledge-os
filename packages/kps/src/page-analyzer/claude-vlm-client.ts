@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+import { toTokenUsage, type TokenUsage } from '../usage/usage-meter';
 import type { VlmClient, VlmRequest } from './vlm-client';
 
 export interface ClaudeVlmClientOptions {
@@ -7,6 +8,8 @@ export interface ClaudeVlmClientOptions {
   apiKey?: string;
   model?: string;
   maxTokens?: number;
+  /** コスト計測用（M5-03）。API呼び出しごとにトークン使用量を通知する */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 const DEFAULT_MODEL = 'claude-opus-4-8';
@@ -21,11 +24,13 @@ export class ClaudeVlmClient implements VlmClient {
   private readonly client: Anthropic;
   private readonly model: string;
   private readonly maxTokens: number;
+  private readonly onUsage?: (usage: TokenUsage) => void;
 
   constructor(options: ClaudeVlmClientOptions = {}) {
     this.client = new Anthropic({ apiKey: options.apiKey, maxRetries: MAX_RETRIES });
     this.model = options.model ?? DEFAULT_MODEL;
     this.maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
+    this.onUsage = options.onUsage;
   }
 
   async complete(request: VlmRequest): Promise<string> {
@@ -62,6 +67,8 @@ export class ClaudeVlmClient implements VlmClient {
         messages,
       })
       .finalMessage();
+
+    this.onUsage?.(toTokenUsage(response.usage));
 
     if (response.stop_reason === 'refusal') {
       throw new Error('VLM refused to analyze the page');

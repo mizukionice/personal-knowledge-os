@@ -5,7 +5,9 @@ import {
   LlmConceptExtractor,
   LlmRelationExtractor,
   MupdfDocumentParser,
+  OPUS_4_8_PRICING,
   SectionChunker,
+  UsageMeter,
   WorkersAiEmbedder,
 } from '@pkos/kps';
 
@@ -32,15 +34,26 @@ async function main(): Promise<void> {
     secretAccessKey: requireEnv('R2_SECRET_ACCESS_KEY'),
   });
   const anthropicApiKey = requireEnv('ANTHROPIC_API_KEY');
+  // M5-03: VLM（ページ解析）とLLM（概念/関係抽出）のトークン使用量を別々に集計する
+  const vlmMeter = new UsageMeter();
+  const llmMeter = new UsageMeter();
   const analyzer = new ClaudePageAnalyzer(
-    new ClaudeVlmClient({ apiKey: anthropicApiKey, model: process.env.VLM_MODEL }),
+    new ClaudeVlmClient({
+      apiKey: anthropicApiKey,
+      model: process.env.VLM_MODEL,
+      onUsage: (u) => vlmMeter.record(u),
+    }),
   );
 
   const embedder = new WorkersAiEmbedder({
     accountId: requireEnv('CF_ACCOUNT_ID'),
     apiToken: requireEnv('CF_AI_TOKEN'),
   });
-  const llm = new ClaudeLlmClient({ apiKey: anthropicApiKey, model: process.env.LLM_MODEL });
+  const llm = new ClaudeLlmClient({
+    apiKey: anthropicApiKey,
+    model: process.env.LLM_MODEL,
+    onUsage: (u) => llmMeter.record(u),
+  });
 
   await runJob(
     {
@@ -57,6 +70,15 @@ async function main(): Promise<void> {
       log: console.log,
     },
     jobId,
+  );
+
+  // M5-03: コスト集計（Actionsログに出力）。VLMとLLMを分けて記録し合算コストを出す
+  const totalCost =
+    vlmMeter.estimateCostUsd(OPUS_4_8_PRICING) + llmMeter.estimateCostUsd(OPUS_4_8_PRICING);
+  console.log(`[cost] VLM   ${vlmMeter.summary()}`);
+  console.log(`[cost] LLM   ${llmMeter.summary()}`);
+  console.log(
+    `[cost] TOTAL Anthropic estCost=$${totalCost.toFixed(4)}（embedding=Workers AI別計上）`,
   );
 }
 
