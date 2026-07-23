@@ -27,6 +27,8 @@ export interface Variables {
   userId: string;
   /** RLS付きDBアクセスに転送するための元のJWT */
   accessToken: string;
+  /** loadProfileがキャッシュする自分のuser_profiles行（行が無ければnull） */
+  profile?: import('@pkos/shared').UserProfile | null;
 }
 
 export type AppEnv = { Bindings: Env; Variables: Variables };

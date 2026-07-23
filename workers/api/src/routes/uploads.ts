@@ -12,6 +12,7 @@ import {
 
 import { dbClient } from '../db';
 import { ApiError } from '../errors';
+import { requirePermission } from '../middleware/permissions';
 import { presignPutUrl } from '../r2-presign';
 import type { AppEnv } from '../types';
 
@@ -53,7 +54,7 @@ async function parseJsonBody(req: Request): Promise<unknown> {
 
 export const uploadsRoute = new Hono<AppEnv>()
   // POST /documents/:id/upload-url — R2署名付きPUT URL発行（15分有効）
-  .post('/:id/upload-url', async (c) => {
+  .post('/:id/upload-url', requirePermission('can_upload'), async (c) => {
     const parsed = uploadUrlRequestSchema.safeParse(await parseJsonBody(c.req.raw));
     if (!parsed.success) {
       throw new ApiError('validation_error', z.prettifyError(parsed.error));
@@ -82,7 +83,7 @@ export const uploadsRoute = new Hono<AppEnv>()
   })
 
   // POST /documents/:id/uploads/complete — サイズ/存在検証しpages行を作成
-  .post('/:id/uploads/complete', async (c) => {
+  .post('/:id/uploads/complete', requirePermission('can_upload'), async (c) => {
     const parsed = completeUploadRequestSchema.safeParse(await parseJsonBody(c.req.raw));
     if (!parsed.success) {
       throw new ApiError('validation_error', z.prettifyError(parsed.error));

@@ -132,6 +132,20 @@ npx wrangler pages project create pkos-web --production-branch main
 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `ANTHROPIC_API_KEY` / `CF_ACCOUNT_ID` /
 `CF_AI_TOKEN` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` をリポジトリのActions Secretsに設定する。
 
+### 5. アクセス制御（サインアップ公開/停止・ユーザー権限）
+
+マイグレーション `20260723000001_admin_access_control.sql` 適用後:
+
+1. **最初の管理者を昇格**（Supabase SQL Editorで1回だけ実行）:
+   ```sql
+   update user_profiles set role = 'admin'
+   where user_id = (select id from auth.users where email = '<あなたのemail>');
+   ```
+2. **サインアップの公開/停止**: Settings画面の管理者パネル、または `PUT /v1/admin/settings`。
+   停止中はDBトリガーが `auth.users` へのinsertを拒否するため、Auth APIを直接叩いても登録できない
+3. **ユーザーごとの機能制御**: 管理者パネルで `can_upload / can_process / can_chat` を切替。
+   無効化された機能のAPIは403を返す（VLM処理・チャットのAnthropic費用をユーザー単位で遮断できる）
+
 ### コスト
 
 1冊あたりのAnthropic APIコストはバッチ完了時にActionsログの `[cost]` 行へ出力される（`UsageMeter`）。

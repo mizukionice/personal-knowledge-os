@@ -33,6 +33,20 @@
 ## Chat（M4）
 - `POST /chat` — body: `{message, history?}` → SSEストリーム。回答末尾にcitations配列 `[{document_id, title, page, section_path}]`
 
+## Admin（M5 セキュリティ強化）
+管理者（`user_profiles.role = 'admin'`）のみ。一般ユーザーは403 `forbidden`。
+- `GET /admin/settings` — `{settings: {signup_enabled, updated_at}}`
+- `PUT /admin/settings` — body: `{signup_enabled: boolean}` — サインアップの公開/停止切替（DBトリガーがauth.users insertを拒否するため、Auth API直叩きもブロックされる）
+- `GET /admin/users` — 全ユーザー一覧 `{users: [{user_id, email, role, can_upload, can_process, can_chat, created_at}]}`（security definer RPC `admin_list_users`）
+- `PATCH /admin/users/:id` — body: `{role?, can_upload?, can_process?, can_chat?}`（1つ以上必須）。自分自身のadmin降格は422で拒否
+
+### 機能権限（ユーザーごと）
+コスト・ストレージが発生するエンドポイントは `user_profiles` の機能フラグで制御する（無効なら403 `forbidden`）:
+- `can_upload` — `POST /documents`, `POST /documents/:id/upload-url`, `POST /documents/:id/uploads/complete`
+- `can_process` — `POST /documents/:id/process`（VLM処理 = Anthropic API費用）
+- `can_chat` — `POST /chat`（Claude API費用）
+閲覧・検索系（GET）は制御対象外。プロフィール行が無い場合は既定で全機能許可。
+
 ## Batch内部連携
 - バッチはWorkers APIを経由せず、service roleで直接Supabase/R2にアクセスする（03_TDD §4）
 - Workers→GitHub: `POST https://api.github.com/repos/{owner}/{repo}/dispatches` body `{event_type: "process_job", client_payload: {job_id}}`

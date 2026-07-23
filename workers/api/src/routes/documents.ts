@@ -9,6 +9,7 @@ import {
 
 import { dbClient } from '../db';
 import { ApiError } from '../errors';
+import { requirePermission } from '../middleware/permissions';
 import type { AppEnv } from '../types';
 
 const idSchema = z.uuid();
@@ -30,8 +31,8 @@ async function parseJsonBody(req: Request): Promise<unknown> {
 }
 
 export const documentsRoute = new Hono<AppEnv>()
-  // POST /documents — 作成
-  .post('/', async (c) => {
+  // POST /documents — 作成（アップロードの起点なのでcan_uploadで制御）
+  .post('/', requirePermission('can_upload'), async (c) => {
     const parsed = createDocumentRequestSchema.safeParse(await parseJsonBody(c.req.raw));
     if (!parsed.success) {
       throw new ApiError('validation_error', z.prettifyError(parsed.error));

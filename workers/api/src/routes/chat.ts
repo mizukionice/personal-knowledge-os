@@ -14,6 +14,7 @@ import { HybridRetriever, type RetrieverStore } from '@pkos/kps/src/retriever/hy
 
 import { dbClient } from '../db';
 import { ApiError } from '../errors';
+import { requirePermission } from '../middleware/permissions';
 import type { AppEnv } from '../types';
 
 /** KPS §9: 検索結果チャンクは合計8000トークン以内 */
@@ -44,7 +45,7 @@ function toRetrievedChunk(row: SearchChunkRow): RetrievedChunk {
 }
 
 /** POST /chat — SSEストリーム（06_API Chat / KPS §8-9） */
-export const chatRoute = new Hono<AppEnv>().post('/', async (c) => {
+export const chatRoute = new Hono<AppEnv>().post('/', requirePermission('can_chat'), async (c) => {
   let body: unknown;
   try {
     body = await c.req.raw.json();

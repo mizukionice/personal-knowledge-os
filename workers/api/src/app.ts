@@ -3,7 +3,9 @@ import { cors } from 'hono/cors';
 
 import { errorBody, handleError } from './errors';
 import { requireAuth } from './middleware/auth';
+import { requireAdmin } from './middleware/permissions';
 import { rateLimit } from './middleware/rate-limit';
+import { adminRoute } from './routes/admin';
 import { chatRoute } from './routes/chat';
 import { conceptsRoute, documentConceptsRoute } from './routes/concepts';
 import { contentRoute } from './routes/content';
@@ -54,6 +56,10 @@ export function createApp() {
   v1.route('/search', searchRoute);
   v1.route('/concepts', conceptsRoute);
   v1.route('/chat', chatRoute);
+
+  // 管理者専用（サインアップ公開/停止、ユーザー権限管理）
+  v1.use('/admin/*', requireAdmin);
+  v1.route('/admin', adminRoute);
 
   app.route('/v1', v1);
 

@@ -115,6 +115,16 @@ create policy "own rows" on documents for all
 ```
 バッチ（service role）はRLSをバイパスするが、必ずjob行のuser_idを引き回して書き込む。
 
+## アクセス制御テーブル（M5 セキュリティ強化）
+`supabase/migrations/20260723000001_admin_access_control.sql`:
+- `app_settings` — 単一行（id=1固定）。`signup_enabled` で新規登録の公開/停止を制御。全員select可（ログイン画面がanonで参照）、update はadminのみ
+- `user_profiles` — `role ('admin'|'user')` + 機能フラグ `can_upload / can_process / can_chat`。本人はselect可、変更はadminのみ
+- `auth.users` トリガー:
+  - `before insert` — `signup_enabled=false` なら `signup_disabled` 例外で登録拒否（Auth API直叩きもブロック）
+  - `after insert` — `user_profiles` 行を自動作成
+- `is_admin()` / `admin_list_users()` — security definer関数。後者は管理者チェックの上で `auth.users.email` を含む一覧を返す
+- 最初の管理者はSQLで昇格: `update user_profiles set role='admin' where user_id = (select id from auth.users where email='<email>');`
+
 ## Hybrid検索クエリ（M3、RPC関数として実装）
 `search_chunks(query_embedding vector, query_text text, uid uuid)`:
 vector top20 と FTS/trgm top20 をRRF（k=60）で統合し、citation情報をjoinして返す。

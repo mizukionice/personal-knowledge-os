@@ -42,6 +42,10 @@ export function fakeDb(
   const from = vi.fn((table: string) => {
     const entry = resultsByTable[table];
     if (entry === undefined) {
+      // 権限ミドルウェアのプロフィール参照は、指定が無ければ「行なし＝既定で全機能許可」にする
+      if (table === 'user_profiles') {
+        return fakeQuery({ data: null, error: null });
+      }
       throw new Error(`unexpected table: ${table}`);
     }
     const results = Array.isArray(entry) ? entry : [entry];
