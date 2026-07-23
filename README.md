@@ -116,7 +116,7 @@ cd apps/web
 npx wrangler pages project create pkos-web --production-branch main
 ```
 
-`ALLOWED_ORIGIN`（`wrangler.toml`）を本番のPagesドメインに絞ると安全（既定は開発用の `*`）。
+`ALLOWED_ORIGIN`（`wrangler.toml`）はCORS許可オリジンのカンマ区切りリスト。既定は本番Pagesドメインのみで、**未設定の場合は全オリジン拒否（fail-closed）**。ローカル開発は `workers/api/.dev.vars` に `ALLOWED_ORIGIN=http://localhost:5173,http://127.0.0.1:5173` を設定する。
 
 ### 3. デプロイ
 

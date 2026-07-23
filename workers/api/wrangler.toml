@@ -12,7 +12,8 @@ compatibility_flags = ["nodejs_compat"]
 # URLとanon (publishable) keyは公開前提の値（フロントのバンドルにも含まれる）
 SUPABASE_URL = "https://lieujxeumqpgribvzoiv.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_IUP8nQMT9-nVmgsc5G-eLg_SGiRiMXu"
-ALLOWED_ORIGIN = "*"
+# CORS許可オリジン（カンマ区切り）。未設定なら全拒否。ローカル開発は .dev.vars で上書き
+ALLOWED_ORIGIN = "https://pkos-web.pages.dev"
 CF_ACCOUNT_ID = "fd95c3822ea4c630f86f22a59fbf5e40"
 R2_BUCKET = "personal-knowledge-os"
 GITHUB_REPO = "mizukionice/personal-knowledge-os"

@@ -74,6 +74,57 @@ describe('認証ミドルウェア', () => {
   });
 });
 
+describe('CORS', () => {
+  it('ALLOWED_ORIGINに含まれるオリジンは許可される', async () => {
+    const app = createApp();
+    const env = { ...baseEnv, ALLOWED_ORIGIN: 'https://pkos-web.pages.dev' };
+    const res = await app.request(
+      '/health',
+      { headers: { Origin: 'https://pkos-web.pages.dev' } },
+      env,
+    );
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('https://pkos-web.pages.dev');
+  });
+
+  it('カンマ区切りで複数オリジンを許可できる', async () => {
+    const app = createApp();
+    const env = {
+      ...baseEnv,
+      ALLOWED_ORIGIN: 'https://pkos-web.pages.dev,http://localhost:5173',
+    };
+    const res = await app.request(
+      '/health',
+      { headers: { Origin: 'http://localhost:5173' } },
+      env,
+    );
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+  });
+
+  it('ALLOWED_ORIGINに含まれないオリジンは許可ヘッダを返さない', async () => {
+    const app = createApp();
+    const env = { ...baseEnv, ALLOWED_ORIGIN: 'https://pkos-web.pages.dev' };
+    const res = await app.request('/health', { headers: { Origin: 'https://evil.example' } }, env);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it('ALLOWED_ORIGIN未設定なら全オリジン拒否（fail-closed）', async () => {
+    const app = createApp();
+    const res = await app.request(
+      '/health',
+      { headers: { Origin: 'https://pkos-web.pages.dev' } },
+      baseEnv,
+    );
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull();
+  });
+
+  it("'*' を明示した場合のみ全許可", async () => {
+    const app = createApp();
+    const env = { ...baseEnv, ALLOWED_ORIGIN: '*' };
+    const res = await app.request('/health', { headers: { Origin: 'https://any.example' } }, env);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+});
+
 describe('エラー形式', () => {
   it('未知の/v1ルートは404 not_found（認証済み）', async () => {
     const app = createApp();
