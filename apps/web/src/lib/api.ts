@@ -12,7 +12,11 @@ import type {
 
 import { supabase } from '@/lib/supabase';
 
-const API_BASE: string = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787';
+// 末尾スラッシュは除去する（`${API_BASE}/v1/...` が `//v1` になり全ルート404になるため）
+const API_BASE: string = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787').replace(
+  /\/+$/,
+  '',
+);
 
 export class ApiRequestError extends Error {
   readonly code: string;
