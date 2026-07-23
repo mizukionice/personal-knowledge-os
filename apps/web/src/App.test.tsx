@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { App } from '@/App';
-import { documentsApi, jobsApi } from '@/lib/api';
+import { documentsApi, jobsApi, profileApi } from '@/lib/api';
 
 vi.mock('@/lib/api', () => ({
   ApiRequestError: class ApiRequestError extends Error {},
@@ -14,6 +14,13 @@ vi.mock('@/lib/api', () => ({
   searchApi: { search: vi.fn() },
   conceptsApi: { list: vi.fn(), get: vi.fn(), forDocument: vi.fn() },
   contentApi: { markdown: vi.fn() },
+  profileApi: { getOwn: vi.fn() },
+  adminApi: {
+    getSettings: vi.fn(),
+    updateSettings: vi.fn(),
+    listUsers: vi.fn(),
+    updateUser: vi.fn(),
+  },
 }));
 
 const auth = vi.hoisted(() => ({
@@ -24,9 +31,23 @@ const auth = vi.hoisted(() => ({
   signOut: vi.fn(),
 }));
 
+const supabaseFrom = vi.hoisted(() => vi.fn());
+
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth },
+  supabase: { auth, from: supabaseFrom },
 }));
+
+/** app_settings.signup_enabled のselectチェーンをフェイクする */
+function mockAppSettings(signupEnabled: boolean) {
+  supabaseFrom.mockReturnValue({
+    select: () => ({
+      eq: () => ({
+        maybeSingle: () =>
+          Promise.resolve({ data: { signup_enabled: signupEnabled }, error: null }),
+      }),
+    }),
+  });
+}
 
 const fakeSession = { user: { id: 'user-1', email: 'test@example.com' } } as unknown as Session;
 
@@ -44,6 +65,8 @@ beforeEach(() => {
   auth.onAuthStateChange.mockReturnValue({
     data: { subscription: { unsubscribe: vi.fn() } },
   });
+  mockAppSettings(true);
+  vi.mocked(profileApi.getOwn).mockResolvedValue(null);
 });
 
 afterEach(cleanup);
@@ -121,6 +144,18 @@ describe('ログイン画面', () => {
 
     const status = await screen.findByRole('status');
     expect(status.textContent).toContain('確認メール');
+  });
+
+  it('signup停止中はアカウント作成が無効化され案内が表示される', async () => {
+    mockAppSettings(false);
+    renderAt('/login');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'アカウントを作成する' }));
+
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toContain('新規アカウント登録は停止されています');
+    const submit = screen.getByRole('button', { name: 'アカウント作成' }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
   });
 });
 

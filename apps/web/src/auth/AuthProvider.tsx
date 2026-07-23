@@ -37,7 +37,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string): Promise<AuthResult> => {
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) return { error: error.message };
+    if (error) {
+      // signup停止中はDBトリガーが登録を拒否し、GoTrueは "Database error saving new user" を返す
+      if (/database error saving new user/i.test(error.message)) {
+        return { error: '現在、新規アカウント登録は停止されています。' };
+      }
+      return { error: error.message };
+    }
     // メール確認が有効な場合、sessionはnullで返る（確認完了までログインされない）
     return { error: null, needsEmailConfirmation: data.session === null };
   };

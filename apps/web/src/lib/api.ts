@@ -1,9 +1,13 @@
 import type {
+  AdminUserRow,
+  AppSettings,
   Document,
   Job,
   PagesSummary,
+  UpdateUserPermissionsRequest,
   UploadUrlRequest,
   UploadUrlResponse,
+  UserProfile,
 } from '@pkos/shared';
 
 import { supabase } from '@/lib/supabase';
@@ -206,6 +210,37 @@ export const chatApi = {
     if (!result) throw new ApiRequestError('internal', '回答ストリームが途中で終了しました', 500);
     return result;
   },
+};
+
+export const profileApi = {
+  /** 自分のuser_profiles行（RLSで自行のみ読める）。行が無ければnull */
+  getOwn: async (): Promise<UserProfile | null> => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (!userId) return null;
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('user_id, role, can_upload, can_process, can_chat')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as UserProfile | null) ?? null;
+  },
+};
+
+export const adminApi = {
+  getSettings: () => apiFetch<{ settings: AppSettings }>('/admin/settings'),
+  updateSettings: (signupEnabled: boolean) =>
+    apiFetch<{ settings: AppSettings }>('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ signup_enabled: signupEnabled }),
+    }),
+  listUsers: () => apiFetch<{ users: AdminUserRow[] }>('/admin/users'),
+  updateUser: (userId: string, input: UpdateUserPermissionsRequest) =>
+    apiFetch<{ profile: UserProfile }>(`/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
 };
 
 export const uploadsApi = {

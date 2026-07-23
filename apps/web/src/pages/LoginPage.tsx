@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BookOpen, Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/auth/context';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,23 @@ export function LoginPage() {
   const location = useLocation();
 
   const [mode, setMode] = useState<Mode>('login');
+  // app_settings.signup_enabled は全員selectできる。取得失敗時はtrue扱い（サーバー側で最終拒否される）
+  const [signupEnabled, setSignupEnabled] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void supabase
+      .from('app_settings')
+      .select('signup_enabled')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data) setSignupEnabled(Boolean(data.signup_enabled));
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -104,8 +122,17 @@ export function LoginPage() {
               {notice}
             </p>
           )}
+          {mode === 'signup' && !signupEnabled && (
+            <p role="status" className="text-sm text-muted-foreground">
+              現在、新規アカウント登録は停止されています。
+            </p>
+          )}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={submitting || (mode === 'signup' && !signupEnabled)}
+          >
             {submitting && <Loader2 className="animate-spin" />}
             {mode === 'login' ? 'ログイン' : 'アカウント作成'}
           </Button>

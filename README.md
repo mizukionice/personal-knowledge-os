@@ -162,5 +162,7 @@ npx wrangler pages project create pkos-web --production-branch main
 - [x] M4: 引用付きチャット — 完了（蔵書内2問・蔵書外1問で出典の正確性とハルシネーション無しを確認）
 - [x] M5: Hardening — Playwright E2E / セキュリティ確認 / コスト計測（1冊約$1.84）/ deploy.yml・運用手順
       （本番ライブデプロイは上記「本番デプロイ / 運用」に沿ってユーザーが手動実行）
+- [x] M5-05〜07: セキュリティ強化 — CORS allowlist化（fail-closed）/ signup公開・停止（管理者切替、DBトリガーで強制）/
+      ユーザーごとの機能権限（can_upload・can_process・can_chat）と管理者パネル
 
 タスク詳細は `docs/08_TASKS.md`。
