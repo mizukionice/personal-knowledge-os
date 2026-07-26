@@ -36,7 +36,10 @@ export function requirePermission(flag: UserPermissionFlag) {
   return createMiddleware<AppEnv>(async (c, next) => {
     const profile = await loadProfile(c);
     if (profile && !profile[flag]) {
-      throw new ApiError('forbidden', `this account is not allowed to ${flag.slice('can_'.length)}`);
+      throw new ApiError(
+        'forbidden',
+        `this account is not allowed to ${flag.slice('can_'.length)}`,
+      );
     }
     await next();
   });

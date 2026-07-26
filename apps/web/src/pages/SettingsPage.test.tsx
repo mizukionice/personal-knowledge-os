@@ -96,9 +96,7 @@ describe('SettingsPage 管理者パネル', () => {
 
     expect(await screen.findByText('公開中（誰でも登録できます）')).toBeDefined();
     expect(screen.getByText('member@example.com')).toBeDefined();
-    const chatCheckbox = screen.getByLabelText(
-      'member@example.comのチャット',
-    ) as HTMLInputElement;
+    const chatCheckbox = screen.getByLabelText('member@example.comのチャット') as HTMLInputElement;
     expect(chatCheckbox.checked).toBe(false);
   });
 

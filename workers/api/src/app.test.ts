@@ -92,11 +92,7 @@ describe('CORS', () => {
       ...baseEnv,
       ALLOWED_ORIGIN: 'https://pkos-web.pages.dev,http://localhost:5173',
     };
-    const res = await app.request(
-      '/health',
-      { headers: { Origin: 'http://localhost:5173' } },
-      env,
-    );
+    const res = await app.request('/health', { headers: { Origin: 'http://localhost:5173' } }, env);
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
   });
 

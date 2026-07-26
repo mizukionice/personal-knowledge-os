@@ -71,7 +71,10 @@ describe('GET /v1/admin/settings', () => {
   it('管理者は現在の設定を取得できる', async () => {
     dbHolder.client = fakeDb({
       user_profiles: { data: adminProfile, error: null },
-      app_settings: { data: { signup_enabled: true, updated_at: '2026-07-23T00:00:00Z' }, error: null },
+      app_settings: {
+        data: { signup_enabled: true, updated_at: '2026-07-23T00:00:00Z' },
+        error: null,
+      },
     });
     const res = await request('/v1/admin/settings');
     expect(res.status).toBe(200);
@@ -84,7 +87,10 @@ describe('PUT /v1/admin/settings', () => {
   it('signup_enabledを切り替えられる', async () => {
     dbHolder.client = fakeDb({
       user_profiles: { data: adminProfile, error: null },
-      app_settings: { data: { signup_enabled: false, updated_at: '2026-07-23T00:00:00Z' }, error: null },
+      app_settings: {
+        data: { signup_enabled: false, updated_at: '2026-07-23T00:00:00Z' },
+        error: null,
+      },
     });
     const res = await request('/v1/admin/settings', {
       method: 'PUT',

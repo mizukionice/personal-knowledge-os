@@ -1,9 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import {
-  updateAppSettingsRequestSchema,
-  updateUserPermissionsRequestSchema,
-} from '@pkos/shared';
+import { updateAppSettingsRequestSchema, updateUserPermissionsRequestSchema } from '@pkos/shared';
 
 import { dbClient } from '../db';
 import { ApiError } from '../errors';
