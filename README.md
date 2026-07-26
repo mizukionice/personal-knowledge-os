@@ -164,5 +164,7 @@ npx wrangler pages project create pkos-web --production-branch main
       （本番ライブデプロイは上記「本番デプロイ / 運用」に沿ってユーザーが手動実行）
 - [x] M5-05〜07: セキュリティ強化 — CORS allowlist化（fail-closed）/ signup公開・停止（管理者切替、DBトリガーで強制）/
       ユーザーごとの機能権限（can_upload・can_process・can_chat）と管理者パネル
+- [x] M5-08: 図表参照の解決 — 本文中の `![説明](fig-N)` / `[表: ...](tbl-N)` が壊れ画像・死にリンクになる問題を修正。
+      Markdown書き出し時に図は説明文ブロック、表は表本体へ展開（既存ドキュメントは再処理でfull.mdが修復される）
 
 タスク詳細は `docs/08_TASKS.md`。
