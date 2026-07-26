@@ -7,7 +7,13 @@ import {
   r2UploadPdfKey,
   type PageAnalysis,
 } from '@pkos/shared';
-import type { AnalyzedPage, DocumentParser, ImageMediaType, PageAnalyzer } from '@pkos/kps';
+import {
+  resolvePageMarkdown,
+  type AnalyzedPage,
+  type DocumentParser,
+  type ImageMediaType,
+  type PageAnalyzer,
+} from '@pkos/kps';
 
 import { runKnowledgeStage, type KnowledgeDeps } from './knowledge-stage';
 import type { Db, ObjectStore } from './types';
@@ -121,7 +127,8 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
         const analysisKey = r2PageAnalysisKey(document.user_id, document.id, page.page_number);
         const markdownKey = r2PageMarkdownKey(document.user_id, document.id, page.page_number);
         await store.put(analysisKey, JSON.stringify(analysis), 'application/json');
-        await store.put(markdownKey, analysis.markdown, 'text/markdown');
+        // 図表参照（fig-N / tbl-N）を説明文・表本体に展開してから配信用Markdownを保存する
+        await store.put(markdownKey, resolvePageMarkdown(analysis), 'text/markdown');
         await db.updatePage(page.id, {
           status: 'completed',
           page_type: analysis.page_type,
@@ -157,9 +164,10 @@ export async function runJob(deps: RunnerDeps, jobId: string): Promise<void> {
       .sort(([a], [b]) => a - b)
       .map(([pageNumber, analysis]) => ({ pageNumber, analysis }));
 
-    // 結合Markdown（full.md）
+    // 結合Markdown（full.md）。過去実行分もanalysisから再解決されるため、
+    // 再実行すれば既存ドキュメントのfull.mdも図表展開済みで再生成される
     const markdownParts = analyzedPages
-      .map((page) => page.analysis.markdown.trim())
+      .map((page) => resolvePageMarkdown(page.analysis))
       .filter((markdown) => markdown !== '');
     if (markdownParts.length > 0) {
       await store.put(

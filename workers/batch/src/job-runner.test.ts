@@ -169,6 +169,43 @@ describe('runJob', () => {
     expect(fullMd).toBe('# p1\n\n# p2');
   });
 
+  it('図表参照（fig-N / tbl-N）を解決したMarkdownをR2へ書き出す', async () => {
+    const { db } = fakeDb({
+      document: { ...bookDocument(), page_count: 1 },
+      pages: [page(1)],
+    });
+    const { store, data } = fakeStore({
+      [`${USER}/${DOC}/uploads/0001.jpg`]: 'img1',
+    });
+    const analyzer: PageAnalyzer = {
+      analyze: vi.fn(async () =>
+        analysis({
+          markdown: '## 5.2 階層化\n\n![スタック図](fig-1)\n\n[表: PDU名称](tbl-1)',
+          figures: [
+            { id: 'fig-1', caption: '図5.4 スタック', description: 'PDUが下位層へ渡る流れ。' },
+          ],
+          tables: [{ id: 'tbl-1', caption: '表5.1 PDU名称', markdown: '| 層 | PDU |\n|---|---|' }],
+        }),
+      ),
+    };
+
+    await runJob({ db, store, parser: noopParser, analyzer }, JOB);
+
+    const pageMd = new TextDecoder().decode(data.get(`${USER}/${DOC}/markdown/0001.md`));
+    const fullMd = new TextDecoder().decode(data.get(`${USER}/${DOC}/markdown/full.md`));
+    for (const md of [pageMd, fullMd]) {
+      expect(md).toContain('> **図** 図5.4 スタック');
+      expect(md).toContain('> PDUが下位層へ渡る流れ。');
+      expect(md).toContain('**表** 表5.1 PDU名称');
+      expect(md).toContain('| 層 | PDU |');
+      expect(md).not.toContain('](fig-1)');
+      expect(md).not.toContain('](tbl-1)');
+    }
+    // analysis JSONは原文のまま保存する（再解決の源泉）
+    const analysisJson = new TextDecoder().decode(data.get(`${USER}/${DOC}/analysis/0001.json`));
+    expect(analysisJson).toContain('![スタック図](fig-1)');
+  });
+
   it('ページ失敗時はそのページをfailedにし、残りは処理し、jobをfailedにする', async () => {
     const { db, state } = fakeDb({ document: bookDocument(), pages: [page(1), page(2)] });
     const { store } = fakeStore({

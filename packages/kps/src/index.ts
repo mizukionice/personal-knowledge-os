@@ -6,6 +6,7 @@ export * from './interfaces';
 export * from './llm/claude-llm-client';
 export * from './llm/json';
 export * from './llm/llm-client';
+export * from './markdown/resolve-page-markdown';
 export * from './page-analyzer/claude-page-analyzer';
 export * from './page-analyzer/claude-vlm-client';
 export * from './page-analyzer/image-preprocessor';
