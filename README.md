@@ -118,7 +118,43 @@ npx wrangler pages project create pkos-web --production-branch main
 
 `ALLOWED_ORIGIN`（`wrangler.toml`）はCORS許可オリジンのカンマ区切りリスト。既定は本番Pagesドメインのみで、**未設定の場合は全オリジン拒否（fail-closed）**。ローカル開発は `workers/api/.dev.vars` に `ALLOWED_ORIGIN=http://localhost:5173,http://127.0.0.1:5173` を設定する。
 
-### 3. デプロイ
+### 3. R2バケットのCORS（初回のみ / オリジン追加時）
+
+アップロードはブラウザからR2へ署名付きURLで直接PUTするため、**バケット側のCORSにフロントのオリジンを登録しないと全アップロードが失敗する**（プリフライトが403になり、UI上は全件「失敗」と表示される）。`ALLOWED_ORIGIN`（APIのCORS）とは別物で、両方の設定が必要。
+
+```sh
+cd workers/api
+npx wrangler r2 bucket cors set personal-knowledge-os --file cors.json
+npx wrangler r2 bucket cors list personal-knowledge-os   # 反映確認
+```
+
+`cors.json` の内容（本番Pages + ローカル開発）:
+
+```json
+{
+  "rules": [
+    {
+      "allowed": {
+        "origins": ["https://pkos-web.pages.dev", "http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "PUT"],
+        "headers": ["*"]
+      },
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
+```
+
+疎通確認（204と `Access-Control-Allow-Origin` が返ればOK）:
+
+```sh
+curl -si -X OPTIONS "https://<bucket>.<account_id>.r2.cloudflarestorage.com/cors-probe" \
+  -H "Origin: https://pkos-web.pages.dev" \
+  -H "Access-Control-Request-Method: PUT" \
+  -H "Access-Control-Request-Headers: content-type"
+```
+
+### 4. デプロイ
 
 - **手動（ローカル）**: `pnpm --filter @pkos/api exec wrangler deploy` / `pnpm --filter @pkos/web build && pnpm --filter @pkos/web exec wrangler pages deploy dist --project-name pkos-web`
 - **GitHub Actions**: `Deploy` ワークフローを手動起動（`workflow_dispatch`、対象 both/api/web を選択）
@@ -127,12 +163,12 @@ npx wrangler pages project create pkos-web --production-branch main
 `CLOUDFLARE_API_TOKEN`（Workers Scripts:Edit + Pages:Edit）、`CLOUDFLARE_ACCOUNT_ID`、
 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_API_BASE_URL`（本番APIのURL）。
 
-### 4. バッチ（`Process Job` ワークフロー）のsecrets
+### 5. バッチ（`Process Job` ワークフロー）のsecrets
 
 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `ANTHROPIC_API_KEY` / `CF_ACCOUNT_ID` /
 `CF_AI_TOKEN` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` をリポジトリのActions Secretsに設定する。
 
-### 5. アクセス制御（サインアップ公開/停止・ユーザー権限）
+### 6. アクセス制御（サインアップ公開/停止・ユーザー権限）
 
 マイグレーション `20260723000001_admin_access_control.sql` 適用後:
 

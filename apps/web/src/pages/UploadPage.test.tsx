@@ -171,9 +171,10 @@ describe('UploadPage', () => {
   });
 
   it('PUT失敗時はcompleteせず、再試行で失敗分だけ再実行する', async () => {
+    // 403は自動リトライ対象外なので1回で失敗が確定する
     putFetch
       .mockResolvedValueOnce({ ok: true, status: 200 })
-      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValueOnce({ ok: false, status: 403 })
       .mockResolvedValue({ ok: true, status: 200 });
 
     renderUpload();
@@ -195,6 +196,37 @@ describe('UploadPage', () => {
       `user-1/${DOC_ID}/uploads/0002.jpg`,
     ]);
   });
+
+  it('一時的なPUT失敗（5xx）は指数バックオフで自動リトライして完了する', async () => {
+    putFetch
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValue({ ok: true, status: 200 });
+
+    renderUpload();
+    await fillAndSelect([imageFile('a.jpg')]);
+    fireEvent.click(screen.getByRole('button', { name: 'アップロード開始' }));
+
+    await waitFor(() => expect(uploadsApi.complete).toHaveBeenCalledOnce(), { timeout: 4000 });
+    // 1回目失敗 + 自動リトライ1回
+    expect(putFetch).toHaveBeenCalledTimes(2);
+    expect(jobsApi.process).toHaveBeenCalledWith(DOC_ID);
+  }, 10000);
+
+  it('全リトライ失敗時は失敗理由をエラーメッセージに表示する', async () => {
+    // CORS/ネットワーク遮断時にブラウザが投げるTypeErrorを再現
+    putFetch.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    renderUpload();
+    await fillAndSelect([imageFile('a.jpg')]);
+    fireEvent.click(screen.getByRole('button', { name: 'アップロード開始' }));
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 5000 });
+    expect(alert.textContent).toContain('1件のアップロードに失敗');
+    expect(alert.textContent).toContain('Failed to fetch');
+    // 最大3回試行して打ち切る
+    expect(putFetch).toHaveBeenCalledTimes(3);
+    expect(uploadsApi.complete).not.toHaveBeenCalled();
+  }, 10000);
 
   it('対応外の形式はエラー表示して追加しない', async () => {
     renderUpload();

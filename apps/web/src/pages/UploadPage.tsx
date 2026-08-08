@@ -11,6 +11,28 @@ import { cn } from '@/lib/utils';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const UPLOAD_CONCURRENCY = 3;
+const UPLOAD_MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 500;
+
+class PutError extends Error {
+  readonly status: number;
+
+  constructor(status: number) {
+    super(`PUT failed with status ${status}`);
+    this.name = 'PutError';
+    this.status = status;
+  }
+}
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** 429/5xx/ネットワークエラーのみリトライする。4xxは再試行しても結果が変わらない */
+const isRetryable = (e: unknown): boolean => {
+  if (e instanceof ApiRequestError || e instanceof PutError) {
+    return e.status === 429 || e.status >= 500;
+  }
+  return true;
+};
 
 type ItemStatus = 'pending' | 'uploading' | 'done' | 'failed';
 
@@ -135,7 +157,29 @@ export function UploadPage() {
         .map((item, index) => ({ item, index }))
         .filter(({ item }) => item.status !== 'done');
       let cursor = 0;
-      const failures: string[] = [];
+      const failures: { name: string; message: string }[] = [];
+
+      const uploadOne = async (item: UploadItem, index: number): Promise<string> => {
+        for (let attempt = 1; ; attempt += 1) {
+          try {
+            const { upload_url, r2_key } = await uploadsApi.getUploadUrl(docId, {
+              file_name: item.file.name,
+              content_type: item.file.type as UploadContentType,
+              ...(isPdf ? {} : { page_number: index + 1 }),
+            });
+            const res = await fetch(upload_url, { method: 'PUT', body: item.file });
+            if (!res.ok) {
+              throw new PutError(res.status);
+            }
+            return r2_key;
+          } catch (e) {
+            if (attempt >= UPLOAD_MAX_ATTEMPTS || !isRetryable(e)) {
+              throw e;
+            }
+            await delay(RETRY_BASE_MS * 2 ** (attempt - 1));
+          }
+        }
+      };
 
       const worker = async () => {
         while (cursor < queue.length) {
@@ -145,19 +189,14 @@ export function UploadPage() {
           const { item, index } = entry;
           setItemStatus(item.id, 'uploading');
           try {
-            const { upload_url, r2_key } = await uploadsApi.getUploadUrl(docId, {
-              file_name: item.file.name,
-              content_type: item.file.type as UploadContentType,
-              ...(isPdf ? {} : { page_number: index + 1 }),
+            const r2Key = await uploadOne(item, index);
+            results.set(item.id, r2Key);
+            setItemStatus(item.id, 'done', r2Key);
+          } catch (e) {
+            failures.push({
+              name: item.file.name,
+              message: e instanceof Error ? e.message : String(e),
             });
-            const res = await fetch(upload_url, { method: 'PUT', body: item.file });
-            if (!res.ok) {
-              throw new Error(`PUT failed with status ${res.status}`);
-            }
-            results.set(item.id, r2_key);
-            setItemStatus(item.id, 'done', r2_key);
-          } catch {
-            failures.push(item.file.name);
             setItemStatus(item.id, 'failed');
           }
         }
@@ -167,8 +206,9 @@ export function UploadPage() {
       );
 
       if (failures.length > 0) {
+        const first = failures[0]!;
         setError(
-          `${failures.length}件のアップロードに失敗しました。「失敗分を再試行」で再実行できます。`,
+          `${failures.length}件のアップロードに失敗しました（例: ${first.name}: ${first.message}）。「失敗分を再試行」で再実行できます。`,
         );
         return;
       }
