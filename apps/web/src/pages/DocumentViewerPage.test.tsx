@@ -120,11 +120,11 @@ describe('DocumentViewerPage', () => {
     expect(document.querySelector('img[onerror]')).toBeNull();
   });
 
-  it('処理中は進捗を表示しMarkdownは取得しない', async () => {
+  it('処理中は進捗を表示しMarkdownは取得しない（失敗ページは完了数に含めない）', async () => {
     vi.mocked(documentsApi.get).mockResolvedValue({
       document: doc({
         status: 'processing',
-        pages_summary: summary({ completed: 1, pending: 2, failed: 0 }),
+        pages_summary: summary({ completed: 1, pending: 1, failed: 1 }),
       }),
     });
     vi.mocked(jobsApi.list).mockResolvedValue({

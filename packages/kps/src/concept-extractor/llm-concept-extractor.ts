@@ -21,6 +21,14 @@ import {
 /** KPS §5: embedding類似度がこの値を超え、かつLLMが同一と判定した場合のみ既存概念に同定する */
 const SIMILARITY_THRESHOLD = 0.9;
 
+/**
+ * 1回の正規化呼び出しに渡す概念数の上限。実書籍（134ページ）で全概念一括の
+ * 出力がmax_tokens(32K)を超えて失敗したため、書籍の長さに依存しないよう分割する。
+ * バッチを跨ぐ表記ゆれは正規化されない可能性があるが、canonical name一致分は
+ * mergeDraftsで統合し、残りは既存Knowledge Baseとの同定（matchExisting）に委ねる
+ */
+const NORMALIZE_BATCH_SIZE = 50;
+
 const normalizationSchema = z.object({
   concepts: z
     .array(
@@ -55,14 +63,6 @@ export class LlmConceptExtractor implements ConceptExtractor {
     const raw = aggregateRawConcepts(pages);
     if (raw.length === 0) return [];
 
-    const { concepts: normalized } = await completeJson(
-      this.llm,
-      normalizationSchema,
-      CONCEPT_NORMALIZER_SYSTEM_PROMPT_V1,
-      buildNormalizeUserText(raw),
-    );
-    if (normalized.length === 0) return [];
-
     // 生の名前→出現ページの索引（正規化結果のmerged_fromからページを復元する）
     const pagesByRawName = new Map<string, number[]>();
     for (const item of raw) {
@@ -70,25 +70,38 @@ export class LlmConceptExtractor implements ConceptExtractor {
       if (item.name_ja) pagesByRawName.set(normalizeKey(item.name_ja), item.pages);
     }
 
-    const drafts: ConceptDraft[] = normalized.map((concept) => {
-      const pageNumbers = new Set<number>();
-      for (const name of concept.merged_from) {
-        for (const pageNumber of pagesByRawName.get(normalizeKey(name)) ?? []) {
-          pageNumbers.add(pageNumber);
+    const drafts: ConceptDraft[] = [];
+    for (let offset = 0; offset < raw.length; offset += NORMALIZE_BATCH_SIZE) {
+      const batch = raw.slice(offset, offset + NORMALIZE_BATCH_SIZE);
+      const { concepts: normalized } = await completeJson(
+        this.llm,
+        normalizationSchema,
+        CONCEPT_NORMALIZER_SYSTEM_PROMPT_V1,
+        buildNormalizeUserText(batch),
+      );
+      for (const concept of normalized) {
+        const pageNumbers = new Set<number>();
+        for (const name of concept.merged_from) {
+          for (const pageNumber of pagesByRawName.get(normalizeKey(name)) ?? []) {
+            pageNumbers.add(pageNumber);
+          }
         }
+        drafts.push({
+          canonicalName: concept.canonical_name,
+          aliases: concept.aliases.filter((alias) => alias !== concept.canonical_name),
+          definition: concept.definition,
+          importance: concept.importance,
+          pageNumbers: [...pageNumbers].sort((a, b) => a - b),
+          existingConceptId: null,
+        });
       }
-      return {
-        canonicalName: concept.canonical_name,
-        aliases: concept.aliases.filter((alias) => alias !== concept.canonical_name),
-        definition: concept.definition,
-        importance: concept.importance,
-        pageNumbers: [...pageNumbers].sort((a, b) => a - b),
-        existingConceptId: null,
-      };
-    });
+    }
 
-    await this.matchExisting(drafts, lookup);
-    return drafts;
+    const merged = mergeDrafts(drafts);
+    if (merged.length === 0) return [];
+
+    await this.matchExisting(merged, lookup);
+    return merged;
   }
 
   private async matchExisting(drafts: ConceptDraft[], lookup: ConceptLookup): Promise<void> {
@@ -146,6 +159,26 @@ export class LlmConceptExtractor implements ConceptExtractor {
 
 function normalizeKey(name: string): string {
   return name.trim().toLowerCase();
+}
+
+/** バッチを跨いで同じcanonical nameになった概念を1つに統合する */
+function mergeDrafts(drafts: ConceptDraft[]): ConceptDraft[] {
+  const byKey = new Map<string, ConceptDraft>();
+  for (const draft of drafts) {
+    const key = normalizeKey(draft.canonicalName);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, draft);
+      continue;
+    }
+    existing.aliases = [...new Set([...existing.aliases, ...draft.aliases])];
+    existing.pageNumbers = [...new Set([...existing.pageNumbers, ...draft.pageNumbers])].sort(
+      (a, b) => a - b,
+    );
+    existing.importance = Math.max(existing.importance, draft.importance);
+    if (!existing.definition) existing.definition = draft.definition;
+  }
+  return [...byKey.values()];
 }
 
 /** ページ単位のconcepts[]を名前キーで集約する */

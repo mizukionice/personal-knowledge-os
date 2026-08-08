@@ -130,7 +130,7 @@ export function DocumentViewerPage() {
           <div className="flex items-center gap-2 text-sm">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
             <span>
-              処理中… {summary.completed + summary.failed} / {summary.total} ページ完了
+              処理中… {summary.completed} / {summary.total} ページ完了
               {latestJob ? `（進捗 ${latestJob.progress}%）` : ''}
             </span>
           </div>
@@ -138,7 +138,7 @@ export function DocumentViewerPage() {
             <div
               className="h-full bg-primary transition-all"
               style={{
-                width: `${summary.total > 0 ? ((summary.completed + summary.failed) / summary.total) * 100 : 0}%`,
+                width: `${summary.total > 0 ? (summary.completed / summary.total) * 100 : 0}%`,
               }}
             />
           </div>

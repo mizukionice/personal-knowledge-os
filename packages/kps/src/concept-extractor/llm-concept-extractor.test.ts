@@ -171,6 +171,81 @@ describe('LlmConceptExtractor', () => {
     expect(findSimilar).toHaveBeenCalledWith(expect.any(Array), 0.9);
   });
 
+  it('概念が多い場合はバッチ分割して正規化し、結果を結合する', async () => {
+    // 51概念 → 50 + 1 の2バッチに分かれる
+    const names = Array.from({ length: 51 }, (_, i) => `concept-${i}`);
+    const batchResponse = (batchNames: string[]) =>
+      JSON.stringify({
+        concepts: batchNames.map((name) => ({
+          canonical_name: name,
+          aliases: [],
+          merged_from: [name],
+          definition: '',
+          importance: 0.5,
+        })),
+      });
+    const llm = mockLlm(batchResponse(names.slice(0, 50)), batchResponse(names.slice(50)));
+    const extractor = new LlmConceptExtractor(llm, mockEmbedder());
+
+    const drafts = await extractor.extract(
+      [
+        page(
+          1,
+          names.map((name) => ({ name })),
+        ),
+      ],
+      mockLookup(),
+    );
+
+    expect(drafts).toHaveLength(51);
+    expect(llm.complete).toHaveBeenCalledTimes(2);
+    // 各バッチの入力にはそのバッチの概念だけが含まれる
+    expect(llm.complete.mock.calls[0]![0].user).toContain('concept-0');
+    expect(llm.complete.mock.calls[0]![0].user).not.toContain('concept-50');
+    expect(llm.complete.mock.calls[1]![0].user).toContain('concept-50');
+  });
+
+  it('バッチを跨いで同じcanonical nameが出たら1つに統合する', async () => {
+    const names = Array.from({ length: 51 }, (_, i) => `concept-${i}`);
+    const single = (name: string, mergedFrom: string[], aliases: string[] = []) => ({
+      canonical_name: name,
+      aliases,
+      merged_from: mergedFrom,
+      definition: '',
+      importance: 0.5,
+    });
+    // 両バッチが同じ canonical「Duplicated」を返すケース
+    const llm = mockLlm(
+      JSON.stringify({
+        concepts: [single('Duplicated', ['concept-0'], ['dup'])],
+      }),
+      JSON.stringify({
+        concepts: [single('Duplicated', ['concept-50'], ['重複'])],
+      }),
+    );
+    const extractor = new LlmConceptExtractor(llm, mockEmbedder());
+
+    const drafts = await extractor.extract(
+      [
+        page(
+          1,
+          names.slice(0, 50).map((name) => ({ name })),
+        ),
+        page(
+          2,
+          names.slice(50).map((name) => ({ name })),
+        ),
+      ],
+      mockLookup(),
+    );
+
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.canonicalName).toBe('Duplicated');
+    expect(drafts[0]!.aliases.sort()).toEqual(['dup', '重複'].sort());
+    // 両バッチのmerged_fromからページが復元される
+    expect(drafts[0]!.pageNumbers).toEqual([1, 2]);
+  });
+
   it('不正なLLM出力は修復リトライされる', async () => {
     const llm = mockLlm('not json', JSON.stringify(normalizedEvm));
     const extractor = new LlmConceptExtractor(llm, mockEmbedder());
