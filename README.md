@@ -107,7 +107,10 @@ cd workers/api
 for s in SUPABASE_JWT_SECRET GITHUB_DISPATCH_TOKEN R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY ANTHROPIC_API_KEY; do
   npx wrangler secret put "$s"   # プロンプトに値を貼り付け
 done
+npx wrangler secret list   # 上記5つが並ぶことを確認
 ```
+
+**注意**: 認証（JWKS）とDBアクセス（anon key + RLS）はsecretsなしでも動くため、未設定でもログイン・閲覧までは正常に見える。アップロード（upload-url）が一律 `internal server error`（500）になる場合は、まず `wrangler secret list` でR2系secretsの有無を確認する。
 
 ### 2. Cloudflare Pagesプロジェクト（初回のみ）
 
