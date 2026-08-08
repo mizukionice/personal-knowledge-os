@@ -26,13 +26,33 @@ class PutError extends Error {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** 429/5xx/ネットワークエラーのみリトライする。4xxは再試行しても結果が変わらない */
+/** 5xx/ネットワークエラーのみリトライする。4xxは再試行しても結果が変わらない（429は別扱い） */
 const isRetryable = (e: unknown): boolean => {
   if (e instanceof ApiRequestError || e instanceof PutError) {
-    return e.status === 429 || e.status >= 500;
+    return e.status >= 500;
   }
   return true;
 };
+
+const RATE_LIMIT_MAX_WAITS = 8;
+const RATE_LIMIT_FALLBACK_WAIT_S = 10;
+
+/**
+ * APIのrate limit（429）はエラーではなく「待てば通る」ので、Retry-Afterの秒数
+ * （なければ10秒）+ジッタだけ待って再実行する。リトライ回数には数えない。
+ */
+async function callWith429Retry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let waits = 0; ; waits += 1) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (!(e instanceof ApiRequestError) || e.status !== 429 || waits >= RATE_LIMIT_MAX_WAITS) {
+        throw e;
+      }
+      await delay(((e.retryAfterSeconds ?? RATE_LIMIT_FALLBACK_WAIT_S) + Math.random()) * 1000);
+    }
+  }
+}
 
 type ItemStatus = 'pending' | 'uploading' | 'done' | 'failed';
 
@@ -162,11 +182,13 @@ export function UploadPage() {
       const uploadOne = async (item: UploadItem, index: number): Promise<string> => {
         for (let attempt = 1; ; attempt += 1) {
           try {
-            const { upload_url, r2_key } = await uploadsApi.getUploadUrl(docId, {
-              file_name: item.file.name,
-              content_type: item.file.type as UploadContentType,
-              ...(isPdf ? {} : { page_number: index + 1 }),
-            });
+            const { upload_url, r2_key } = await callWith429Retry(() =>
+              uploadsApi.getUploadUrl(docId, {
+                file_name: item.file.name,
+                content_type: item.file.type as UploadContentType,
+                ...(isPdf ? {} : { page_number: index + 1 }),
+              }),
+            );
             const res = await fetch(upload_url, { method: 'PUT', body: item.file });
             if (!res.ok) {
               throw new PutError(res.status);
@@ -216,10 +238,10 @@ export function UploadPage() {
       const orderedKeys = items
         .map((item) => results.get(item.id))
         .filter((key): key is string => Boolean(key));
-      await uploadsApi.complete(docId, orderedKeys);
+      await callWith429Retry(() => uploadsApi.complete(docId, orderedKeys));
       // アップロード完了後に処理を開始し、進捗はViewerで表示する（07_UI_UX）
       try {
-        await jobsApi.process(docId);
+        await callWith429Retry(() => jobsApi.process(docId));
       } catch (e) {
         // 既にジョブがある場合（422）は進捗表示に進むだけでよい
         if (!(e instanceof ApiRequestError && e.status === 422)) {

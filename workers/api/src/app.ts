@@ -35,7 +35,13 @@ export function createApp() {
   app.onError(handleError);
   app.notFound((c) => c.json(errorBody('not_found', 'not found'), 404));
 
-  app.use('*', (c, next) => cors({ origin: corsOriginResolver(c.env.ALLOWED_ORIGIN) })(c, next));
+  app.use('*', (c, next) =>
+    cors({
+      origin: corsOriginResolver(c.env.ALLOWED_ORIGIN),
+      // Retry-AfterはCORS safelist外のため明示しないとブラウザから読めない
+      exposeHeaders: ['Retry-After'],
+    })(c, next),
+  );
 
   // 死活監視用（認証不要）
   app.get('/health', (c) => c.json({ status: 'ok' }));

@@ -112,6 +112,8 @@ npx wrangler secret list   # 上記5つが並ぶことを確認
 
 **注意**: 認証（JWKS）とDBアクセス（anon key + RLS）はsecretsなしでも動くため、未設定でもログイン・閲覧までは正常に見える。アップロード（upload-url）が一律 `internal server error`（500）になる場合は、まず `wrangler secret list` でR2系secretsの有無を確認する。
 
+APIのレートリミットは60リクエスト/分（`RATE_LIMIT_MAX` で調整可）。超過時は429に `Retry-After`（秒）が付き、フロントのアップロード処理はその秒数だけ待って自動再開するため、大量ページのアップロードは失敗にならず時間をかけて完走する。
+
 ### 2. Cloudflare Pagesプロジェクト（初回のみ）
 
 ```sh

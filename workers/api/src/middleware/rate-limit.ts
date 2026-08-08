@@ -31,7 +31,11 @@ export function rateLimit() {
     } else {
       bucket.count += 1;
       if (bucket.count > max) {
-        throw new ApiError('rate_limited', 'too many requests');
+        // クライアントがウィンドウ明けを待って自動再開できるよう残り秒数を返す
+        const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+        throw new ApiError('rate_limited', 'too many requests', {
+          'Retry-After': String(retryAfter),
+        });
       }
     }
     await next();

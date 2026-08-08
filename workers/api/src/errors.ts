@@ -15,11 +15,13 @@ const STATUS_BY_CODE: Record<ErrorCode, ContentfulStatusCode> = {
 
 export class ApiError extends Error {
   readonly code: ErrorCode;
+  readonly headers?: Record<string, string>;
 
-  constructor(code: ErrorCode, message: string) {
+  constructor(code: ErrorCode, message: string, headers?: Record<string, string>) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
+    this.headers = headers;
   }
 
   get status(): ContentfulStatusCode {
@@ -33,7 +35,7 @@ export function errorBody(code: ErrorCode, message: string) {
 
 export function handleError(err: Error, c: Context): Response {
   if (err instanceof ApiError) {
-    return c.json(errorBody(err.code, err.message), err.status);
+    return c.json(errorBody(err.code, err.message), err.status, err.headers);
   }
   console.error('unhandled error:', err);
   return c.json(errorBody('internal', 'internal server error'), 500);

@@ -21,13 +21,21 @@ const API_BASE: string = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost
 export class ApiRequestError extends Error {
   readonly code: string;
   readonly status: number;
+  /** 429時にサーバが返すRetry-After（秒）。呼び出し側の自動再開に使う */
+  readonly retryAfterSeconds?: number;
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, retryAfterSeconds?: number) {
     super(message);
     this.name = 'ApiRequestError';
     this.code = code;
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+function parseRetryAfter(res: Response): number | undefined {
+  const seconds = Number(res.headers.get('Retry-After'));
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
 }
 
 /** Workers API（/v1）への認証付きfetch。JWTはSupabaseセッションから取得する */
@@ -54,6 +62,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       err?.code ?? 'internal',
       err?.message ?? `request failed with status ${res.status}`,
       res.status,
+      parseRetryAfter(res),
     );
   }
   return body as T;

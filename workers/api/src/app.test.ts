@@ -154,6 +154,22 @@ describe('rate limit', () => {
     expect(body.error.code).toBe('rate_limited');
   });
 
+  it('429にはRetry-Afterが付き、CORSでブラウザから読める', async () => {
+    const app = createApp();
+    const env = { ...baseEnv, RATE_LIMIT_MAX: '1' };
+    const token = await makeToken();
+    const headers = { Authorization: `Bearer ${token}`, Origin: 'https://pkos-web.pages.dev' };
+
+    await app.request('/v1/me', { headers }, env);
+    const res = await app.request('/v1/me', { headers }, env);
+
+    expect(res.status).toBe(429);
+    const retryAfter = Number(res.headers.get('Retry-After'));
+    expect(retryAfter).toBeGreaterThanOrEqual(1);
+    expect(retryAfter).toBeLessThanOrEqual(60);
+    expect(res.headers.get('Access-Control-Expose-Headers')).toContain('Retry-After');
+  });
+
   it('ユーザーが異なればカウントは独立', async () => {
     const app = createApp();
     const env = { ...baseEnv, RATE_LIMIT_MAX: '1' };

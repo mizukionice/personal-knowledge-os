@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 
 import { App } from '@/App';
-import { documentsApi, jobsApi, uploadsApi } from '@/lib/api';
+import { ApiRequestError, documentsApi, jobsApi, uploadsApi } from '@/lib/api';
 
 const auth = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -24,6 +24,7 @@ vi.mock('@/lib/api', () => ({
       public code: string,
       message: string,
       public status: number,
+      public retryAfterSeconds?: number,
     ) {
       super(message);
     }
@@ -210,6 +211,25 @@ describe('UploadPage', () => {
     // 1回目失敗 + 自動リトライ1回
     expect(putFetch).toHaveBeenCalledTimes(2);
     expect(jobsApi.process).toHaveBeenCalledWith(DOC_ID);
+  }, 10000);
+
+  it('429はRetry-Afterの秒数だけ待って自動再開する（試行回数を消費しない）', async () => {
+    const rateLimited = new ApiRequestError('rate_limited', 'too many requests', 429, 1);
+    vi.mocked(uploadsApi.getUploadUrl)
+      .mockRejectedValueOnce(rateLimited)
+      .mockResolvedValue({
+        upload_url: 'https://signed.example/1',
+        r2_key: `user-1/${DOC_ID}/uploads/0001.jpg`,
+      });
+
+    renderUpload();
+    await fillAndSelect([imageFile('a.jpg')]);
+    fireEvent.click(screen.getByRole('button', { name: 'アップロード開始' }));
+
+    await waitFor(() => expect(uploadsApi.complete).toHaveBeenCalledOnce(), { timeout: 5000 });
+    // 429で1回待機 → 再発行して成功
+    expect(uploadsApi.getUploadUrl).toHaveBeenCalledTimes(2);
+    expect(putFetch).toHaveBeenCalledTimes(1);
   }, 10000);
 
   it('全リトライ失敗時は失敗理由をエラーメッセージに表示する', async () => {
